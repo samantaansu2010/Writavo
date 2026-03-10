@@ -272,7 +272,7 @@
       if (!res.data?.accessToken) {
         // Email verification required
         localStorage.setItem('pendingEmail', email);
-        window.location.href = `/verify-email.html?email=${encodeURIComponent(email)}`;
+        window.location.href = `verify-email.html?email=${encodeURIComponent(email)}`;
         return;
       }
       showAlert('Account created! Redirecting...', 'success');
