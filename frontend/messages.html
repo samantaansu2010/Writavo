@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Messages — Writavo</title>
+  <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;0,700&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./styles/main.css">
+  <link rel="stylesheet" href="./styles/components/components.css">
+</head>
+<body>
+<nav class="navbar">
+  <div class="navbar-left">
+    <a href="/discover.html" class="navbar-logo">Writav<span style="color:var(--accent)">o</span></a>
+    <span style="font-size:14px;color:var(--ink-muted);font-weight:500">Messages</span>
+  </div>
+  <div class="navbar-right">
+    <a href="/discover.html" class="btn btn-secondary btn-sm">← Home</a>
+  </div>
+</nav>
+
+<main class="main-content" style="margin-left:0;padding-top:var(--nav-h)">
+  <div class="messages-layout">
+    <div class="conv-list" id="convList">
+      <div style="padding:16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
+        <span style="font-weight:600;font-size:15px">Conversations</span>
+        <button class="btn btn-primary btn-sm" onclick="showNewMsgPanel()">New +</button>
+      </div>
+      <div id="convItems"><div style="padding:20px"><div class="skeleton" style="height:60px;margin-bottom:8px;border-radius:8px"></div><div class="skeleton" style="height:60px;margin-bottom:8px;border-radius:8px"></div><div class="skeleton" style="height:60px;border-radius:8px"></div></div></div>
+    </div>
+    <div class="chat-area" id="chatArea">
+      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:12px;color:var(--ink-muted)">
+        <svg width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+        <p style="font-family:var(--font-serif);font-size:18px">Select a conversation</p>
+        <p style="font-size:14px">Or start a new one</p>
+        <button class="btn btn-primary" onclick="showNewMsgPanel()">New message</button>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- New message search panel -->
+<div class="modal-overlay" id="newMsgModal" style="display:none">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-header">
+      <h3 class="modal-title">New Message</h3>
+      <button class="btn btn-ghost btn-icon" onclick="document.getElementById('newMsgModal').style.display='none'">✕</button>
+    </div>
+    <div class="form-group">
+      <input class="form-input" type="text" id="userSearchInput" placeholder="Search by username..." oninput="searchForUser(this.value)">
+    </div>
+    <div id="userResults" style="max-height:240px;overflow-y:auto"></div>
+  </div>
+</div>
+
+<script type="module">
+import api from './scripts/api.js';
+import { requireAuth, getUser, getAvatarHtml, timeAgo, toast, initTheme, debounce } from './scripts/utils/helpers.js';
+requireAuth();
+initTheme();
+
+const currentUser = getUser();
+let activeConvUserId = null;
+let socket = null;
+
+// Load conversations
+async function loadConversations() {
+  try {
+    const res = await api.getConversations();
+    const convs = res.data.conversations || [];
+    const convItems = document.getElementById('convItems');
+    if (!convs.length) {
+      convItems.innerHTML = '<div style="padding:24px;text-align:center"><p class="text-muted text-sm">No conversations yet</p></div>';
+      return;
+    }
+    convItems.innerHTML = convs.map(c => {
+      const u = c.otherUser || {};
+      return `<div class="conv-item" id="conv_${u._id}" onclick="openConversation('${u._id}','${u.username}','${u.displayName||u.username}')">
+        ${getAvatarHtml(u,'sm')}
+        <div class="conv-meta">
+          <div class="conv-name">${u.displayName||u.username||'Unknown'}</div>
+          <div class="conv-last-msg">${c.lastMessage?.content||'Start chatting'}</div>
+        </div>
+        ${c.unreadCount>0?`<span class="conv-unread">${c.unreadCount}</span>`:''}
+      </div>`;
+    }).join('');
+  } catch(e) { document.getElementById('convItems').innerHTML = '<p class="text-muted text-sm" style="padding:20px">Failed to load conversations.</p>'; }
+}
+
+window.openConversation = async (userId, username, displayName) => {
+  activeConvUserId = userId;
+  document.querySelectorAll('.conv-item').forEach(el => el.classList.remove('active'));
+  const el = document.getElementById(`conv_${userId}`);
+  if (el) el.classList.add('active');
+
+  const chat = document.getElementById('chatArea');
+  chat.innerHTML = `
+    <div class="chat-header">
+      <a href="/profile.html?user=${username}" style="display:flex;align-items:center;gap:10px;text-decoration:none;color:inherit">
+        <div><div style="font-weight:600;font-size:15px">${displayName}</div><div style="font-size:12px;color:var(--ink-muted)">@${username}</div></div>
+      </a>
+      <a href="/profile.html?user=${username}" class="btn btn-secondary btn-sm" style="margin-left:auto">View profile</a>
+    </div>
+    <div class="chat-messages" id="chatMessages"><div style="text-align:center;padding:20px"><div class="spinner" style="margin:0 auto"></div></div></div>
+    <div class="chat-input-area">
+      <input class="chat-input" id="msgInput" placeholder="Type a message..." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMsg();}">
+      <button class="btn btn-primary" onclick="sendMsg()">Send</button>
+    </div>`;
+
+  loadMessages(userId);
+};
+
+async function loadMessages(userId) {
+  try {
+    const res = await api.getMessages(userId);
+    const messages = res.data.messages || [];
+    const container = document.getElementById('chatMessages');
+    if (!messages.length) {
+      container.innerHTML = '<div style="text-align:center;padding:40px"><p class="text-muted text-sm">No messages yet. Say hello! 👋</p></div>';
+      return;
+    }
+    container.innerHTML = messages.map(m => {
+      const isMine = m.sender._id === currentUser?._id || m.sender._id === currentUser?.id;
+      return `<div class="msg-group ${isMine?'mine':'theirs'}">
+        <div class="msg-bubble ${isMine?'mine':'theirs'}">${m.isDeleted?'<em style="opacity:.6">Message deleted</em>':m.content}</div>
+        <div class="msg-time">${timeAgo(m.createdAt)}${isMine&&m.isRead?' · Read':''}</div>
+      </div>`;
+    }).join('');
+    container.scrollTop = container.scrollHeight;
+  } catch(e) {}
+}
+
+window.sendMsg = async () => {
+  if (!activeConvUserId) return;
+  const input = document.getElementById('msgInput');
+  const content = input.value.trim();
+  if (!content) return;
+  input.value = '';
+  try {
+    const res = await api.sendMessage(activeConvUserId, content);
+    const m = res.data.message;
+    const container = document.getElementById('chatMessages');
+    container.innerHTML += `<div class="msg-group mine"><div class="msg-bubble mine">${m.content}</div><div class="msg-time">${timeAgo(m.createdAt)}</div></div>`;
+    container.scrollTop = container.scrollHeight;
+  } catch(e) { toast('Failed to send message','error'); input.value = content; }
+};
+
+window.showNewMsgPanel = () => document.getElementById('newMsgModal').style.display = 'flex';
+
+window.searchForUser = debounce(async (q) => {
+  if (!q.trim()) { document.getElementById('userResults').innerHTML = ''; return; }
+  try {
+    const res = await api.searchUsers(q);
+    const users = res.data.users || [];
+    document.getElementById('userResults').innerHTML = users.length
+      ? users.map(u => `<div class="conv-item" style="cursor:pointer" onclick="startNewConversation('${u._id}','${u.username}','${u.displayName||u.username}')">
+          ${getAvatarHtml(u,'sm')}
+          <div class="conv-meta"><div class="conv-name">${u.displayName||u.username}</div><div class="conv-last-msg">@${u.username}</div></div>
+        </div>`).join('')
+      : '<p class="text-muted text-sm" style="padding:12px">No users found.</p>';
+  } catch(e) {}
+}, 350);
+
+window.startNewConversation = (id, username, displayName) => {
+  document.getElementById('newMsgModal').style.display = 'none';
+  openConversation(id, username, displayName);
+};
+
+// Check URL params (e.g., /messages.html?user=username)
+const params = new URLSearchParams(window.location.search);
+const targetUser = params.get('user');
+
+loadConversations().then(() => {
+  if (targetUser) {
+    api.getProfile(targetUser).then(res => {
+      const u = res.data.user;
+      openConversation(u._id, u.username, u.displayName||u.username);
+    }).catch(() => {});
+  }
+});
+</script>
+</body>
+</html>

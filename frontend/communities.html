@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Communities — Writavo</title>
+  <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;0,700&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./styles/main.css">
+  <link rel="stylesheet" href="./styles/components/components.css">
+  <style>
+    .comm-layout{display:grid;grid-template-columns:280px 1fr;height:calc(100vh - var(--nav-h));overflow:hidden}
+    .comm-sidebar{border-right:1px solid var(--border);overflow-y:auto;display:flex;flex-direction:column}
+    .comm-sidebar-header{padding:16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+    .comm-sidebar-title{font-weight:600;font-size:15px}
+    .comm-list-item{display:flex;align-items:center;gap:10px;padding:10px 16px;cursor:pointer;border-radius:0;transition:background .15s;text-decoration:none;color:inherit}
+    .comm-list-item:hover{background:var(--paper-hover)}
+    .comm-list-item.active{background:var(--paper-hover)}
+    .comm-list-icon{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;overflow:hidden}
+    .comm-list-icon img{width:100%;height:100%;object-fit:cover;border-radius:10px}
+    .comm-list-name{font-size:14px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .comm-list-count{font-size:12px;color:var(--ink-faint)}
+    .comm-main{overflow-y:auto;display:flex;flex-direction:column}
+
+    /* Discover view */
+    .comm-discover{padding:32px}
+    .comm-discover-header{margin-bottom:28px}
+    .comm-discover-title{font-family:var(--font-serif);font-size:28px;font-weight:700;margin-bottom:6px}
+    .comm-cat-filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:24px}
+    .comm-cat-btn{padding:6px 14px;border:1.5px solid var(--border);border-radius:100px;font-size:13px;font-weight:500;cursor:pointer;transition:all .2s;background:none;font-family:inherit;color:var(--ink-muted)}
+    .comm-cat-btn:hover,.comm-cat-btn.active{border-color:var(--ink);background:var(--ink);color:var(--paper)}
+    .comm-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px}
+    .comm-card{border:1px solid var(--border);border-radius:12px;overflow:hidden;cursor:pointer;transition:transform .2s,box-shadow .2s;background:var(--paper)}
+    .comm-card:hover{transform:translateY(-2px);box-shadow:0 6px 24px rgba(0,0,0,.08)}
+    .comm-card-banner{height:80px;background:linear-gradient(135deg,var(--accent),var(--paper-hover));position:relative}
+    .comm-card-banner img{width:100%;height:100%;object-fit:cover}
+    .comm-card-body{padding:12px 16px 16px}
+    .comm-card-avatar{width:44px;height:44px;border-radius:10px;border:3px solid var(--paper);margin-top:-22px;margin-bottom:8px;overflow:hidden;background:var(--paper-warm);display:flex;align-items:center;justify-content:center;font-size:20px}
+    .comm-card-avatar img{width:100%;height:100%;object-fit:cover}
+    .comm-card-name{font-weight:600;font-size:15px;margin-bottom:4px}
+    .comm-card-desc{font-size:13px;color:var(--ink-muted);line-height:1.5;margin-bottom:10px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+    .comm-card-footer{display:flex;align-items:center;justify-content:space-between}
+    .comm-card-stat{font-size:12px;color:var(--ink-faint)}
+
+    /* Community detail/chat view */
+    .comm-detail{display:grid;grid-template-columns:200px 1fr;height:100%}
+    .channel-list{border-right:1px solid var(--border);overflow-y:auto;padding:12px 0}
+    .channel-list-header{padding:8px 14px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-faint);margin-top:8px}
+    .channel-item{display:flex;align-items:center;gap:6px;padding:6px 14px;cursor:pointer;border-radius:0;transition:background .15s;font-size:14px;color:var(--ink-muted)}
+    .channel-item:hover{background:var(--paper-hover);color:var(--ink)}
+    .channel-item.active{background:var(--paper-hover);color:var(--ink);font-weight:500}
+    .channel-hash{font-size:16px;opacity:.6}
+    .chat-area-wrap{display:flex;flex-direction:column;height:100%}
+    .comm-chat-header{padding:12px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
+    .comm-chat-msgs{flex:1;overflow-y:auto;padding:16px 20px;display:flex;flex-direction:column;gap:4px}
+    .comm-msg{display:flex;gap:10px;padding:4px 0;border-radius:6px;transition:background .1s}
+    .comm-msg:hover{background:var(--paper-warm)}
+    .comm-msg-body{flex:1}
+    .comm-msg-header{display:flex;align-items:baseline;gap:8px;margin-bottom:2px}
+    .comm-msg-name{font-size:14px;font-weight:600}
+    .comm-msg-time{font-size:11px;color:var(--ink-faint)}
+    .comm-msg-text{font-size:15px;line-height:1.5;color:var(--ink-soft)}
+    .comm-chat-input-area{padding:12px 20px;border-top:1px solid var(--border);display:flex;gap:8px}
+    .comm-chat-input{flex:1;padding:10px 14px;border:1.5px solid var(--border);border-radius:8px;outline:none;font-size:14px;background:var(--paper);color:var(--ink);font-family:inherit;transition:border-color .2s}
+    .comm-chat-input:focus{border-color:var(--ink)}
+
+    /* Community detail header */
+    .comm-detail-banner{height:140px;background:linear-gradient(135deg,var(--accent),#8b3a1a);overflow:hidden;position:relative}
+    .comm-detail-banner img{width:100%;height:100%;object-fit:cover}
+    .comm-detail-header{padding:0 20px 16px;border-bottom:1px solid var(--border)}
+    .comm-detail-avatar{width:56px;height:56px;border-radius:12px;border:3px solid var(--paper);margin-top:-28px;margin-bottom:8px;font-size:24px;background:var(--paper-warm);display:flex;align-items:center;justify-content:center;overflow:hidden}
+    .comm-detail-avatar img{width:100%;height:100%;object-fit:cover}
+
+    @media(max-width:800px){
+      .comm-layout{grid-template-columns:1fr}
+      .comm-sidebar{display:none}
+      .comm-detail{grid-template-columns:1fr}
+      .channel-list{display:none}
+    }
+  </style>
+</head>
+<body>
+<nav class="navbar">
+  <div class="navbar-left">
+    <a href="/discover.html" class="navbar-logo">Writav<span style="color:var(--accent)">o</span></a>
+    <span style="font-size:14px;color:var(--ink-muted);font-weight:500">Communities</span>
+  </div>
+  <div class="navbar-right" id="authNav"></div>
+</nav>
+
+<main class="main-content" style="margin-left:0;padding-top:var(--nav-h)">
+  <div class="comm-layout">
+    <!-- LEFT SIDEBAR: my communities -->
+    <div class="comm-sidebar">
+      <div class="comm-sidebar-header">
+        <span class="comm-sidebar-title">My Communities</span>
+        <button class="btn btn-primary btn-sm" onclick="openCreateModal()">+ New</button>
+      </div>
+      <div id="myCommList">
+        <div style="padding:24px;text-align:center">
+          <div class="skeleton" style="height:44px;margin-bottom:8px;border-radius:8px"></div>
+          <div class="skeleton" style="height:44px;margin-bottom:8px;border-radius:8px"></div>
+        </div>
+      </div>
+      <div style="padding:16px;margin-top:auto;border-top:1px solid var(--border)">
+        <button class="btn btn-secondary w-full" onclick="showDiscover()">🔍 Discover communities</button>
+      </div>
+    </div>
+
+    <!-- RIGHT MAIN -->
+    <div class="comm-main" id="commMain">
+      <!-- Discover view shown by default -->
+      <div class="comm-discover" id="discoverView">
+        <div class="comm-discover-header">
+          <h1 class="comm-discover-title">Discover Communities</h1>
+          <p style="color:var(--ink-muted);font-size:15px">Find your tribe. Join conversations.</p>
+        </div>
+        <div class="comm-cat-filters" id="catFilters">
+          <button class="comm-cat-btn active" data-cat="all" onclick="setCat('all',this)">All</button>
+          <button class="comm-cat-btn" data-cat="Writing"     onclick="setCat('Writing',this)">✍️ Writing</button>
+          <button class="comm-cat-btn" data-cat="Technology"  onclick="setCat('Technology',this)">💻 Tech</button>
+          <button class="comm-cat-btn" data-cat="Science"     onclick="setCat('Science',this)">🔬 Science</button>
+          <button class="comm-cat-btn" data-cat="Art"         onclick="setCat('Art',this)">🎨 Art</button>
+          <button class="comm-cat-btn" data-cat="Music"       onclick="setCat('Music',this)">🎵 Music</button>
+          <button class="comm-cat-btn" data-cat="Gaming"      onclick="setCat('Gaming',this)">🎮 Gaming</button>
+          <button class="comm-cat-btn" data-cat="Education"   onclick="setCat('Education',this)">📚 Education</button>
+        </div>
+        <div class="comm-grid" id="commGrid">
+          ${[1,2,3,4,5,6].map(()=>`<div class="skeleton" style="height:180px;border-radius:12px"></div>`).join('')}
+        </div>
+        <div id="noCommsMsg" style="display:none;text-align:center;padding:80px 20px">
+          <div style="font-size:48px;margin-bottom:12px">🏘️</div>
+          <h3 style="font-family:var(--font-serif)">No communities yet</h3>
+          <p class="text-muted" style="margin:10px 0 20px">Be the first to create one!</p>
+          <button class="btn btn-primary" onclick="openCreateModal()">Create community</button>
+        </div>
+      </div>
+
+      <!-- Community detail view (hidden by default) -->
+      <div id="detailView" style="display:none;height:100%"></div>
+    </div>
+  </div>
+</main>
+
+<!-- CREATE COMMUNITY MODAL -->
+<div class="modal-overlay" id="createModal" style="display:none">
+  <div class="modal" style="max-width:520px">
+    <div class="modal-header">
+      <h3 class="modal-title">Create a Community</h3>
+      <button class="btn btn-ghost btn-icon" onclick="document.getElementById('createModal').style.display='none'">✕</button>
+    </div>
+    <div id="createAlert" style="display:none;margin-bottom:16px"></div>
+    <div class="form-group">
+      <label class="form-label">Community name *</label>
+      <input class="form-input" type="text" id="commName" placeholder="e.g. Indie Writers Circle" maxlength="80">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Short description *</label>
+      <input class="form-input" type="text" id="commShortDesc" placeholder="One line about your community" maxlength="160">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Full description</label>
+      <textarea class="form-input" id="commDesc" rows="3" placeholder="What is this community about?" maxlength="1000"></textarea>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Category</label>
+        <select class="form-input" id="commCategory">
+          <option>Writing</option><option>Technology</option><option>Science</option>
+          <option>Art</option><option>Music</option><option>Travel</option>
+          <option>Food</option><option>Health</option><option>Business</option>
+          <option>Gaming</option><option>Education</option><option>Other</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Accent color</label>
+        <input class="form-input" type="color" id="commColor" value="#c8622a" style="height:42px;padding:4px">
+      </div>
+    </div>
+    <div class="form-group">
+      <label style="display:flex;align-items:center;gap:10px;cursor:pointer">
+        <input type="checkbox" id="commPublic" checked>
+        <span class="form-label" style="margin:0">Public community (anyone can join)</span>
+      </label>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:8px">
+      <button class="btn btn-secondary w-full" onclick="document.getElementById('createModal').style.display='none'">Cancel</button>
+      <button class="btn btn-primary w-full" id="createBtn" onclick="createCommunity()">Create 🚀</button>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import api from './scripts/api.js';
+import { isLoggedIn, getUser, getAvatarHtml, timeAgo, formatCount, toast, initTheme, debounce } from './scripts/utils/helpers.js';
+
+initTheme();
+const user = getUser();
+
+// Auth nav
+const authNav = document.getElementById('authNav');
+authNav.innerHTML = isLoggedIn() && user
+  ? `<div style="display:flex;gap:8px"><a href="/write.html" class="btn btn-primary btn-sm">✍️ Write</a><a href="/discover.html" class="btn btn-secondary btn-sm">Home</a></div>`
+  : `<a href="/login.html" class="btn btn-secondary btn-sm">Sign in</a><a href="/signup.html" class="btn btn-primary btn-sm">Join free</a>`;
+
+let currentCat = 'all';
+let activeCommunity = null;
+let activeChannel = 'general';
+let messagePolling = null;
+
+// ── Load my communities (sidebar) ──────────────────────────────────────────
+async function loadMyCommunities() {
+  const list = document.getElementById('myCommList');
+  if (!isLoggedIn()) { list.innerHTML = '<p class="text-muted text-sm" style="padding:16px">Sign in to see your communities</p>'; return; }
+  try {
+    const res = await api.get('/communities/me');
+    const comms = res.data.communities || [];
+    if (!comms.length) { list.innerHTML = '<p class="text-muted text-sm" style="padding:16px">You haven\'t joined any communities yet.</p>'; return; }
+    list.innerHTML = comms.map(c => `
+      <div class="comm-list-item" onclick="openCommunity('${c.slug}')">
+        <div class="comm-list-icon" style="background:${c.color||'var(--accent)'}22">
+          ${c.avatar ? `<img src="${c.avatar}" alt="">` : `<span style="color:${c.color||'var(--accent)'}">${c.name.charAt(0).toUpperCase()}</span>`}
+        </div>
+        <div style="min-width:0">
+          <div class="comm-list-name">${c.name}</div>
+          <div class="comm-list-count">${formatCount(c.memberCount||0)} members</div>
+        </div>
+      </div>`).join('');
+  } catch(e) { list.innerHTML = '<p class="text-muted text-sm" style="padding:16px">Could not load.</p>'; }
+}
+
+// ── Load discover grid ─────────────────────────────────────────────────────
+async function loadCommunities(cat='all') {
+  const grid = document.getElementById('commGrid');
+  grid.innerHTML = [1,2,3,4,5,6].map(()=>`<div class="skeleton" style="height:180px;border-radius:12px"></div>`).join('');
+  document.getElementById('noCommsMsg').style.display = 'none';
+  try {
+    const params = cat !== 'all' ? `?category=${cat}` : '';
+    const res = await api.get(`/communities${params}`);
+    const comms = res.data || res.data?.communities || [];
+    const list = Array.isArray(res.data) ? res.data : (res.data?.data || []);
+
+    // handle paginatedResponse structure
+    const communities = res.data?.data || res.data?.communities || (Array.isArray(res.data) ? res.data : []);
+
+    if (!communities.length) { grid.innerHTML = ''; document.getElementById('noCommsMsg').style.display = 'block'; return; }
+    grid.innerHTML = communities.map(c => `
+      <div class="comm-card" onclick="openCommunity('${c.slug}')">
+        <div class="comm-card-banner" style="${c.color?`background:linear-gradient(135deg,${c.color}88,${c.color}22)`:''}">
+          ${c.banner ? `<img src="${c.banner}" alt="">` : ''}
+        </div>
+        <div class="comm-card-body">
+          <div class="comm-card-avatar" style="background:${c.color||'var(--accent)'}22">
+            ${c.avatar ? `<img src="${c.avatar}" alt="">` : `<span style="color:${c.color||'var(--accent)'}">${c.name.charAt(0).toUpperCase()}</span>`}
+          </div>
+          <div class="comm-card-name">${c.name} ${c.isVerified?'✅':''}</div>
+          <div class="comm-card-desc">${c.shortDesc||c.description||''}</div>
+          <div class="comm-card-footer">
+            <span class="comm-card-stat">👥 ${formatCount(c.memberCount||0)} members</span>
+            <button class="btn btn-primary btn-sm" style="font-size:12px" onclick="event.stopPropagation();joinComm('${c._id}','${c.slug}',this)">${c.isMember?'View':'Join'}</button>
+          </div>
+        </div>
+      </div>`).join('');
+  } catch(e) { grid.innerHTML = '<p class="text-muted" style="padding:20px">Could not load communities.</p>'; }
+}
+
+window.setCat = (cat, el) => {
+  document.querySelectorAll('.comm-cat-btn').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active'); currentCat = cat; loadCommunities(cat);
+};
+
+window.showDiscover = () => {
+  document.getElementById('discoverView').style.display = 'block';
+  document.getElementById('detailView').style.display = 'none';
+  if (messagePolling) { clearInterval(messagePolling); messagePolling = null; }
+};
+
+window.joinComm = async (id, slug, btn) => {
+  if (!isLoggedIn()) { window.location.href='/login.html'; return; }
+  try {
+    const res = await api.post(`/communities/${slug}/join`);
+    if (res.data.joined || res.data.pending) {
+      btn.textContent = res.data.pending ? 'Pending' : 'View';
+      toast(res.data.pending ? 'Request sent!' : 'Joined! 🎉', 'success');
+      loadMyCommunities();
+    } else {
+      btn.textContent = 'Join'; toast('Left community', 'info');
+      loadMyCommunities();
+    }
+  } catch(e) { toast(e.message||'Action failed','error'); }
+};
+
+// ── Open community detail ──────────────────────────────────────────────────
+window.openCommunity = async (slug) => {
+  document.getElementById('discoverView').style.display = 'none';
+  const detail = document.getElementById('detailView');
+  detail.style.display = 'block';
+  detail.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;height:200px"><div class="spinner"></div></div>`;
+
+  // Highlight sidebar
+  document.querySelectorAll('.comm-list-item').forEach(el=>el.classList.remove('active'));
+
+  try {
+    const res = await api.get(`/communities/${slug}`);
+    const c = res.data.community;
+    activeCommunity = c;
+    activeChannel = c.channels?.[0]?.slug || 'general';
+    renderCommunityDetail(c);
+    loadChannelMessages(c._id || c.id, activeChannel);
+
+    // Poll for new messages every 4s
+    if (messagePolling) clearInterval(messagePolling);
+    messagePolling = setInterval(() => loadChannelMessages(c._id || c.id, activeChannel, true), 4000);
+  } catch(e) {
+    detail.innerHTML = `<div style="padding:40px;text-align:center"><p class="text-muted">Could not load community.</p><button class="btn btn-secondary" onclick="showDiscover()">Back</button></div>`;
+  }
+};
+
+function renderCommunityDetail(c) {
+  const isMember = c.isMember;
+  const role = c.role;
+  const isAdmin = role === 'admin' || c.owner?._id === user?._id || c.owner?._id === user?.id;
+
+  document.getElementById('detailView').innerHTML = `
+    <div style="display:flex;flex-direction:column;height:100%">
+      <!-- Banner + header -->
+      <div class="comm-detail-banner" style="${c.color?`background:linear-gradient(135deg,${c.color},${c.color}66)`:''}">
+        ${c.banner?`<img src="${c.banner}" alt="">`:''}
+        <button onclick="showDiscover()" style="position:absolute;top:12px;left:12px;padding:6px 12px;background:rgba(0,0,0,.4);color:white;border:none;border-radius:6px;cursor:pointer;font-size:13px">← Back</button>
+      </div>
+      <div class="comm-detail-header">
+        <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:12px">
+          <div class="comm-detail-avatar" style="background:${c.color||'var(--accent)'}22">
+            ${c.avatar?`<img src="${c.avatar}" alt="">`:`<span style="color:${c.color||'var(--accent)'}">${c.name.charAt(0).toUpperCase()}</span>`}
+          </div>
+          <div style="margin-bottom:8px;display:flex;gap:8px">
+            ${isAdmin?`<button class="btn btn-secondary btn-sm" onclick="openAddChannel()">+ Channel</button>`:''}
+            <button class="btn btn-primary btn-sm" id="joinDetailBtn" onclick="joinCommDetail('${c._id}','${c.slug}')">${isMember?'Leave':'Join'}</button>
+          </div>
+        </div>
+        <div style="font-family:var(--font-serif);font-size:20px;font-weight:700">${c.name} ${c.isVerified?'✅':''}</div>
+        <div style="font-size:13px;color:var(--ink-muted);margin:4px 0">${c.shortDesc||''}</div>
+        <div style="font-size:12px;color:var(--ink-faint)">👥 ${formatCount(c.memberCount||0)} members · 📂 ${c.category}</div>
+      </div>
+
+      <!-- Channels + chat -->
+      <div class="comm-detail" style="flex:1;overflow:hidden">
+        <div class="channel-list">
+          <div class="channel-list-header">Channels</div>
+          ${(c.channels||[]).map(ch=>`
+            <div class="channel-item ${ch.slug===activeChannel?'active':''}" id="chan_${ch.slug}" onclick="switchChannel('${c._id||c.id}','${ch.slug}')">
+              <span class="channel-hash">#</span> ${ch.name}
+            </div>`).join('')}
+        </div>
+        <div class="chat-area-wrap">
+          <div class="comm-chat-header">
+            <span class="channel-hash" style="font-size:18px">#</span>
+            <span style="font-weight:600" id="activeChannelName">${activeChannel}</span>
+            <span style="font-size:12px;color:var(--ink-faint);margin-left:8px" id="channelDesc">${c.channels?.find(ch=>ch.slug===activeChannel)?.description||''}</span>
+          </div>
+          <div class="comm-chat-msgs" id="channelMsgs">
+            <div style="text-align:center;padding:20px"><div class="spinner" style="margin:0 auto"></div></div>
+          </div>
+          ${isMember ? `
+          <div class="comm-chat-input-area">
+            <input class="comm-chat-input" id="chanMsgInput" placeholder="Message #${activeChannel}..." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChanMsg();}">
+            <button class="btn btn-primary" onclick="sendChanMsg()">Send</button>
+          </div>` : `<div style="padding:14px 20px;border-top:1px solid var(--border);text-align:center"><button class="btn btn-primary" onclick="joinCommDetail('${c._id}','${c.slug}')">Join to participate</button></div>`}
+        </div>
+      </div>
+    </div>`;
+}
+
+window.switchChannel = (communityId, channelSlug) => {
+  document.querySelectorAll('.channel-item').forEach(el=>el.classList.remove('active'));
+  const el = document.getElementById(`chan_${channelSlug}`);
+  if (el) el.classList.add('active');
+  activeChannel = channelSlug;
+  const nameEl = document.getElementById('activeChannelName');
+  if (nameEl) nameEl.textContent = channelSlug;
+  document.getElementById('channelMsgs').innerHTML = '<div style="text-align:center;padding:20px"><div class="spinner" style="margin:0 auto"></div></div>';
+  loadChannelMessages(communityId, channelSlug);
+};
+
+let lastMsgId = null;
+async function loadChannelMessages(communityId, channel, silent=false) {
+  try {
+    const slug = activeCommunity?.slug;
+    if (!slug) return;
+    const res = await api.get(`/communities/${slug}/channels/${channel}/messages?limit=60`);
+    const msgs = res.data?.data || res.data?.messages || [];
+    const container = document.getElementById('channelMsgs');
+    if (!container) return;
+
+    // Check if new messages
+    const latestId = msgs[msgs.length-1]?._id;
+    if (silent && latestId === lastMsgId) return;
+    lastMsgId = latestId;
+
+    const wasAtBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 80;
+
+    if (!msgs.length) {
+      container.innerHTML = `<div style="text-align:center;padding:60px 20px"><p class="text-muted">No messages yet.</p><p class="text-muted text-sm">Be the first to say something! 👋</p></div>`;
+      return;
+    }
+
+    container.innerHTML = msgs.map(m => `
+      <div class="comm-msg">
+        ${getAvatarHtml(m.sender,'sm')}
+        <div class="comm-msg-body">
+          <div class="comm-msg-header">
+            <span class="comm-msg-name">${m.sender?.displayName||m.sender?.username||'Unknown'}</span>
+            <span class="comm-msg-time">${timeAgo(m.createdAt)}</span>
+          </div>
+          <div class="comm-msg-text">${m.isDeleted?'<em style="opacity:.5">Message deleted</em>':escapeHtml(m.content)}</div>
+        </div>
+      </div>`).join('');
+
+    if (!silent || wasAtBottom) container.scrollTop = container.scrollHeight;
+  } catch(e) { if (!silent) console.error(e); }
+}
+
+window.sendChanMsg = async () => {
+  const input = document.getElementById('chanMsgInput');
+  const content = input.value.trim();
+  if (!content || !activeCommunity) return;
+  if (!isLoggedIn()) { window.location.href='/login.html'; return; }
+  input.value = '';
+  try {
+    await api.post(`/communities/${activeCommunity.slug}/channels/${activeChannel}/messages`, { content });
+    loadChannelMessages(activeCommunity._id, activeChannel);
+  } catch(e) { toast(e.message||'Failed to send','error'); input.value = content; }
+};
+
+window.joinCommDetail = async (id, slug) => {
+  if (!isLoggedIn()) { window.location.href='/login.html'; return; }
+  try {
+    const res = await api.post(`/communities/${slug}/join`);
+    toast(res.data.joined ? 'Joined! 🎉' : res.data.pending ? 'Request sent!' : 'Left community', 'success');
+    openCommunity(slug);
+    loadMyCommunities();
+  } catch(e) { toast(e.message||'Action failed','error'); }
+};
+
+window.openAddChannel = () => {
+  const name = prompt('Channel name (e.g. "off-topic"):');
+  if (!name || !activeCommunity) return;
+  api.post(`/communities/${activeCommunity.slug}/channels`, { name })
+    .then(() => { toast('Channel created!','success'); openCommunity(activeCommunity.slug); })
+    .catch(e => toast(e.message||'Failed','error'));
+};
+
+// ── Create community ──────────────────────────────────────────────────────
+window.openCreateModal = () => {
+  if (!isLoggedIn()) { window.location.href='/login.html'; return; }
+  document.getElementById('createModal').style.display = 'flex';
+};
+
+window.createCommunity = async () => {
+  const name = document.getElementById('commName').value.trim();
+  const shortDesc = document.getElementById('commShortDesc').value.trim();
+  if (!name || !shortDesc) { showCreateAlert('Name and short description are required','error'); return; }
+
+  const btn = document.getElementById('createBtn');
+  btn.textContent='Creating...'; btn.disabled=true;
+  try {
+    const res = await api.post('/communities', {
+      name, shortDesc,
+      description: document.getElementById('commDesc').value.trim(),
+      category: document.getElementById('commCategory').value,
+      color: document.getElementById('commColor').value,
+      isPublic: document.getElementById('commPublic').checked,
+    });
+    toast('Community created! 🎉','success');
+    document.getElementById('createModal').style.display='none';
+    loadMyCommunities();
+    openCommunity(res.data.community.slug);
+  } catch(e) { showCreateAlert(e.message||'Creation failed','error'); }
+  finally { btn.textContent='Create 🚀'; btn.disabled=false; }
+};
+
+function showCreateAlert(msg, type) {
+  const el = document.getElementById('createAlert');
+  el.className=`alert alert-${type}`; el.textContent=msg; el.style.display='block';
+}
+
+function escapeHtml(text) {
+  return text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// Check URL params
+const params = new URLSearchParams(window.location.search);
+if (params.get('c')) openCommunity(params.get('c'));
+
+loadMyCommunities();
+loadCommunities();
+</script>
+</body>
+</html>

@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Panel — Writavo</title>
+  <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;0,700&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./styles/main.css">
+  <style>
+    body{background:var(--paper-warm)}
+    .admin-shell{display:grid;grid-template-columns:220px 1fr;min-height:100vh;padding-top:60px}
+    .admin-sidebar{background:var(--paper);border-right:1px solid var(--border);padding:20px 0;position:sticky;top:60px;height:calc(100vh - 60px);overflow-y:auto}
+    .admin-nav-item{display:flex;align-items:center;gap:10px;padding:10px 20px;cursor:pointer;font-size:14px;font-weight:500;color:var(--ink-muted);transition:all .15s;border-left:3px solid transparent}
+    .admin-nav-item:hover{background:var(--paper-hover);color:var(--ink)}
+    .admin-nav-item.active{background:var(--accent-soft);color:var(--accent);border-left-color:var(--accent)}
+    .admin-main{padding:32px}
+    .stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;margin-bottom:32px}
+    .stat-card{background:var(--paper);border:1px solid var(--border);border-radius:12px;padding:20px}
+    .stat-value{font-family:var(--font-serif);font-size:32px;font-weight:700}
+    .stat-label{font-size:13px;color:var(--ink-muted);margin-top:4px}
+    .stat-delta{font-size:12px;color:var(--green,#2d7a4a);margin-top:6px;font-weight:500}
+    .stat-warn{color:var(--red,#c43030)}
+    .section{background:var(--paper);border:1px solid var(--border);border-radius:12px;padding:24px;margin-bottom:20px}
+    .section-title{font-family:var(--font-serif);font-size:18px;font-weight:600;margin-bottom:18px;display:flex;align-items:center;justify-content:space-between}
+    .data-table{width:100%;border-collapse:collapse;font-size:14px}
+    .data-table th{text-align:left;padding:10px 12px;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-faint);border-bottom:1px solid var(--border)}
+    .data-table td{padding:12px;border-bottom:1px solid var(--border-soft);vertical-align:middle}
+    .data-table tr:last-child td{border-bottom:none}
+    .data-table tr:hover td{background:var(--paper-hover)}
+    .badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:100px;font-size:11px;font-weight:500}
+    .badge-active{background:var(--green-soft,#d8f0e4);color:var(--green,#2d7a4a)}
+    .badge-banned{background:var(--red-soft,#fce8e8);color:var(--red,#c43030)}
+    .badge-admin{background:#e8e0f8;color:#7c3aed}
+    .badge-mod{background:var(--blue-soft,#dde8f8);color:var(--blue,#2d5a9e)}
+    .badge-user{background:var(--paper-hover);color:var(--ink-muted)}
+    .badge-pending{background:#fef3c7;color:#d97706}
+    .badge-resolved{background:var(--green-soft);color:var(--green)}
+    .badge-dismissed{background:var(--paper-hover);color:var(--ink-muted)}
+    .action-btn{padding:4px 10px;border-radius:5px;font-size:12px;font-weight:500;cursor:pointer;border:1.5px solid var(--border);background:none;font-family:inherit;transition:all .15s}
+    .action-btn:hover{background:var(--paper-hover)}
+    .action-btn.danger{border-color:var(--red,#c43030);color:var(--red,#c43030)}
+    .action-btn.danger:hover{background:var(--red-soft,#fce8e8)}
+    .action-btn.primary{border-color:var(--ink);color:var(--ink)}
+    .action-btn.success{border-color:var(--green,#2d7a4a);color:var(--green,#2d7a4a)}
+    .search-bar{display:flex;gap:10px;margin-bottom:18px}
+    .search-bar input,.search-bar select{padding:8px 12px;border:1.5px solid var(--border);border-radius:7px;font-size:14px;background:var(--paper);color:var(--ink);outline:none;font-family:inherit}
+    .search-bar input{flex:1}
+    .tab-panel{display:none}
+    .tab-panel.active{display:block}
+    @media(max-width:768px){.admin-shell{grid-template-columns:1fr}.admin-sidebar{display:none}}
+  </style>
+</head>
+<body>
+<nav class="navbar">
+  <div class="navbar-left">
+    <a href="/discover.html" class="navbar-logo">Writav<span style="color:var(--accent)">o</span></a>
+    <span style="font-size:13px;color:var(--ink-muted);margin-left:8px;font-family:var(--font-sans)">/ Admin</span>
+  </div>
+  <div class="navbar-right">
+    <a href="/discover.html" class="action-btn" style="padding:7px 14px;border:1.5px solid var(--border);border-radius:7px;text-decoration:none;font-size:13px;font-family:inherit;cursor:pointer">← Back to site</a>
+  </div>
+</nav>
+
+<div class="admin-shell">
+  <!-- Sidebar -->
+  <aside class="admin-sidebar">
+    <div style="padding:0 20px 16px;border-bottom:1px solid var(--border);margin-bottom:8px">
+      <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-faint)">Admin Panel</div>
+    </div>
+    <div class="admin-nav-item active" onclick="showPanel('overview',this)">📊 Overview</div>
+    <div class="admin-nav-item" onclick="showPanel('users',this)">👥 Users</div>
+    <div class="admin-nav-item" onclick="showPanel('posts',this)">📝 Posts</div>
+    <div class="admin-nav-item" onclick="showPanel('reports',this)">⚑ Reports <span id="reportBadge" style="margin-left:auto;background:var(--red,#c43030);color:white;border-radius:100px;padding:1px 7px;font-size:11px;display:none"></span></div>
+    <div class="admin-nav-item" onclick="showPanel('communities',this)" style="display:none">🏘 Communities</div>
+  </aside>
+
+  <!-- Main -->
+  <main class="admin-main">
+
+    <!-- OVERVIEW -->
+    <div class="tab-panel active" id="panel-overview">
+      <h2 style="font-family:var(--font-serif);font-size:24px;font-weight:700;margin-bottom:24px">Platform Overview</h2>
+      <div class="stat-grid" id="statsGrid">
+        ${[1,2,3,4,5,6].map(()=>`<div class="stat-card"><div class="skeleton" style="height:50px;border-radius:6px"></div></div>`).join('')}
+      </div>
+      <div class="section">
+        <div class="section-title">Top Posts by Views</div>
+        <table class="data-table" id="topPostsTable"><tbody><tr><td colspan="4" style="padding:32px;text-align:center"><div class="spinner" style="margin:0 auto"></div></td></tr></tbody></table>
+      </div>
+    </div>
+
+    <!-- USERS -->
+    <div class="tab-panel" id="panel-users">
+      <h2 style="font-family:var(--font-serif);font-size:24px;font-weight:700;margin-bottom:24px">User Management</h2>
+      <div class="search-bar">
+        <input type="text" id="userSearch" placeholder="Search username, email..." oninput="debounceUserSearch(this.value)">
+        <select id="userRoleFilter" onchange="loadUsers()">
+          <option value="">All roles</option>
+          <option value="admin">Admin</option>
+          <option value="moderator">Moderator</option>
+          <option value="user">User</option>
+        </select>
+        <select id="userStatusFilter" onchange="loadUsers()">
+          <option value="">All status</option>
+          <option value="true">Active</option>
+          <option value="false">Banned</option>
+        </select>
+      </div>
+      <div class="section" style="padding:0;overflow:auto">
+        <table class="data-table">
+          <thead><tr><th>User</th><th>Email</th><th>Role</th><th>Status</th><th>Joined</th><th>Actions</th></tr></thead>
+          <tbody id="usersTableBody"><tr><td colspan="6" style="padding:40px;text-align:center"><div class="spinner" style="margin:0 auto"></div></td></tr></tbody>
+        </table>
+      </div>
+      <div id="usersPagination" style="margin-top:16px;display:flex;gap:8px;justify-content:flex-end"></div>
+    </div>
+
+    <!-- POSTS -->
+    <div class="tab-panel" id="panel-posts">
+      <h2 style="font-family:var(--font-serif);font-size:24px;font-weight:700;margin-bottom:24px">Post Moderation</h2>
+      <div class="search-bar">
+        <input type="text" id="postSearch" placeholder="Search posts..." oninput="debouncePostSearch(this.value)">
+        <select id="postStatusFilter" onchange="loadPosts()">
+          <option value="">All</option>
+          <option value="published">Published</option>
+          <option value="draft">Draft</option>
+        </select>
+      </div>
+      <div class="section" style="padding:0;overflow:auto">
+        <table class="data-table">
+          <thead><tr><th>Title</th><th>Author</th><th>Status</th><th>Views</th><th>Date</th><th>Actions</th></tr></thead>
+          <tbody id="postsTableBody"><tr><td colspan="6" style="padding:40px;text-align:center"><div class="spinner" style="margin:0 auto"></div></td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- REPORTS -->
+    <div class="tab-panel" id="panel-reports">
+      <h2 style="font-family:var(--font-serif);font-size:24px;font-weight:700;margin-bottom:24px">Content Reports</h2>
+      <div class="search-bar">
+        <select id="reportStatusFilter" onchange="loadReports()">
+          <option value="pending">Pending</option>
+          <option value="reviewed">Reviewed</option>
+          <option value="resolved">Resolved</option>
+          <option value="dismissed">Dismissed</option>
+        </select>
+        <select id="reportTypeFilter" onchange="loadReports()">
+          <option value="">All types</option>
+          <option value="Post">Post</option>
+          <option value="Comment">Comment</option>
+          <option value="User">User</option>
+        </select>
+      </div>
+      <div id="reportsList"></div>
+    </div>
+
+  </main>
+</div>
+
+<script type="module">
+import api from './scripts/api.js';
+import { requireAuth, getUser, getAvatarHtml, timeAgo, formatCount, formatDate, toast, initTheme } from './scripts/utils/helpers.js';
+
+initTheme();
+requireAuth();
+const user = getUser();
+if (user?.role !== 'admin') {
+  document.body.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;min-height:100vh;text-align:center;padding:40px"><div><div style="font-size:56px;margin-bottom:16px">🔒</div><h2 style="font-family:var(--font-serif);font-size:28px;margin-bottom:12px">Access Denied</h2><p style="color:var(--ink-muted);margin-bottom:24px">Admin privileges required.</p><a href="/discover.html" style="padding:10px 20px;background:var(--ink);color:var(--paper);border-radius:7px;text-decoration:none;font-size:14px">Go home</a></div></div>`;
+  throw new Error('Not admin');
+}
+
+let userSearchTimer, postSearchTimer;
+const debounce = (fn, ms) => { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; };
+window.debounceUserSearch = debounce(loadUsers, 400);
+window.debouncePostSearch = debounce(loadPosts, 400);
+
+// ── Panel Navigation ────────────────────────────────────────────────────────
+window.showPanel = (panel, el) => {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.admin-nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById(`panel-${panel}`).classList.add('active');
+  el.classList.add('active');
+  if (panel === 'users')    loadUsers();
+  if (panel === 'posts')    loadPosts();
+  if (panel === 'reports')  loadReports();
+};
+
+// ── Stats ──────────────────────────────────────────────────────────────────
+async function loadStats() {
+  try {
+    const res = await api.get('/admin/stats');
+    const d = res.data;
+    if (d.moderation?.pendingReports > 0) {
+      const badge = document.getElementById('reportBadge');
+      badge.textContent = d.moderation.pendingReports;
+      badge.style.display = 'inline';
+    }
+    document.getElementById('statsGrid').innerHTML = `
+      <div class="stat-card"><div class="stat-value">${(d.users?.total||0).toLocaleString()}</div><div class="stat-label">Total Users</div><div class="stat-delta">+${d.users?.last7Days||0} this week</div></div>
+      <div class="stat-card"><div class="stat-value">${(d.posts?.total||0).toLocaleString()}</div><div class="stat-label">Published Posts</div><div class="stat-delta">+${d.posts?.last30Days||0} this month</div></div>
+      <div class="stat-card"><div class="stat-value">${formatCount(d.engagement?.totalViews||0)}</div><div class="stat-label">Total Views</div></div>
+      <div class="stat-card"><div class="stat-value">${formatCount(d.engagement?.totalLikes||0)}</div><div class="stat-label">Total Likes</div></div>
+      <div class="stat-card"><div class="stat-value stat-warn">${d.users?.banned||0}</div><div class="stat-label">Banned Users</div></div>
+      <div class="stat-card"><div class="stat-value stat-warn">${d.moderation?.pendingReports||0}</div><div class="stat-label">Pending Reports</div></div>`;
+
+    const topPosts = d.topPosts || [];
+    document.getElementById('topPostsTable').innerHTML = `
+      <thead><tr><th>Title</th><th>Author</th><th>Views</th><th>Likes</th></tr></thead>
+      <tbody>${topPosts.map(p=>`
+        <tr>
+          <td><a href="/post.html?slug=${p.slug}" target="_blank" style="color:var(--ink);text-decoration:none;font-weight:500">${p.title}</a></td>
+          <td style="color:var(--ink-muted)">@${p.author?.username||'—'}</td>
+          <td>${formatCount(p.viewCount||0)}</td>
+          <td>${formatCount(p.likeCount||0)}</td>
+        </tr>`).join('')}</tbody>`;
+  } catch(e) { document.getElementById('statsGrid').innerHTML = `<p style="color:var(--ink-muted)">Failed to load stats.</p>`; }
+}
+
+// ── Users ──────────────────────────────────────────────────────────────────
+async function loadUsers() {
+  const q       = document.getElementById('userSearch')?.value || '';
+  const role    = document.getElementById('userRoleFilter')?.value || '';
+  const isActive= document.getElementById('userStatusFilter')?.value;
+  const params  = new URLSearchParams({ q, limit: 20 });
+  if (role)     params.set('role', role);
+  if (isActive !== undefined && isActive !== '') params.set('isActive', isActive);
+
+  document.getElementById('usersTableBody').innerHTML = `<tr><td colspan="6" style="padding:32px;text-align:center"><div class="spinner" style="margin:0 auto"></div></td></tr>`;
+  try {
+    const res   = await api.get(`/admin/users?${params}`);
+    const users = res?.data?.users || [];
+    if (!users.length) { document.getElementById('usersTableBody').innerHTML = `<tr><td colspan="6" style="padding:32px;text-align:center;color:var(--ink-muted)">No users found.</td></tr>`; return; }
+    document.getElementById('usersTableBody').innerHTML = users.map(u => `
+      <tr>
+        <td>
+          <div style="display:flex;align-items:center;gap:10px">
+            ${getAvatarHtml(u,'xs')}
+            <div>
+              <div style="font-weight:600;font-size:13px">${u.displayName||u.username}</div>
+              <div style="font-size:12px;color:var(--ink-faint)">@${u.username}</div>
+            </div>
+          </div>
+        </td>
+        <td style="font-size:13px;color:var(--ink-muted)">${u.email}</td>
+        <td><span class="badge badge-${u.role}">${u.role}</span></td>
+        <td><span class="badge ${u.isActive?'badge-active':'badge-banned'}">${u.isActive?'Active':'Banned'}</span></td>
+        <td style="font-size:12px;color:var(--ink-faint)">${timeAgo(u.createdAt)}</td>
+        <td>
+          <div style="display:flex;gap:6px;flex-wrap:wrap">
+            ${u.isActive
+              ? `<button class="action-btn danger" onclick="banUser('${u._id}','${u.username}')">Ban</button>`
+              : `<button class="action-btn success" onclick="unbanUser('${u._id}','${u.username}')">Unban</button>`}
+            <select class="action-btn" style="cursor:pointer" onchange="changeRole('${u._id}', this.value, '${u.username}')" title="Change role">
+              <option value="">Role…</option>
+              <option value="user" ${u.role==='user'?'selected':''}>user</option>
+              <option value="moderator" ${u.role==='moderator'?'selected':''}>moderator</option>
+              <option value="admin" ${u.role==='admin'?'selected':''}>admin</option>
+            </select>
+          </div>
+        </td>
+      </tr>`).join('');
+  } catch(e) { document.getElementById('usersTableBody').innerHTML = `<tr><td colspan="6" style="padding:24px;text-align:center;color:var(--ink-muted)">Failed to load users.</td></tr>`; }
+}
+
+window.banUser = async (id, username) => {
+  const reason = prompt(`Reason for banning @${username}:`, 'Violated community guidelines');
+  if (reason === null) return;
+  try { await api.put(`/admin/users/${id}/ban`, { reason }); toast(`@${username} banned`, 'success'); loadUsers(); }
+  catch(e) { toast(e.message||'Failed', 'error'); }
+};
+
+window.unbanUser = async (id, username) => {
+  if (!confirm(`Unban @${username}?`)) return;
+  try { await api.put(`/admin/users/${id}/unban`); toast(`@${username} unbanned`, 'success'); loadUsers(); }
+  catch(e) { toast(e.message||'Failed', 'error'); }
+};
+
+window.changeRole = async (id, role, username) => {
+  if (!role) return;
+  if (!confirm(`Change @${username} to role: ${role}?`)) return;
+  try { await api.put(`/admin/users/${id}/role`, { role }); toast(`Role updated`, 'success'); loadUsers(); }
+  catch(e) { toast(e.message||'Failed', 'error'); }
+};
+
+// ── Posts ──────────────────────────────────────────────────────────────────
+async function loadPosts() {
+  const q      = document.getElementById('postSearch')?.value || '';
+  const status = document.getElementById('postStatusFilter')?.value || '';
+  const params = new URLSearchParams({ limit: 20 });
+  if (q)      params.set('q', q);
+  if (status) params.set('status', status);
+  document.getElementById('postsTableBody').innerHTML = `<tr><td colspan="6" style="padding:32px;text-align:center"><div class="spinner" style="margin:0 auto"></div></td></tr>`;
+  try {
+    const res   = await api.get(`/admin/posts?${params}`);
+    const posts = res?.data?.posts || [];
+    if (!posts.length) { document.getElementById('postsTableBody').innerHTML = `<tr><td colspan="6" style="padding:32px;text-align:center;color:var(--ink-muted)">No posts found.</td></tr>`; return; }
+    document.getElementById('postsTableBody').innerHTML = posts.map(p => `
+      <tr>
+        <td><a href="/post.html?slug=${p.slug}" target="_blank" style="color:var(--ink);text-decoration:none;font-weight:500;font-size:13px;display:block;max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.title}</a></td>
+        <td style="font-size:13px;color:var(--ink-muted)">@${p.author?.username||'?'}</td>
+        <td><span class="badge ${p.status==='published'?'badge-active':'badge-user'}">${p.status}</span></td>
+        <td style="font-size:13px">${formatCount(p.viewCount||0)}</td>
+        <td style="font-size:12px;color:var(--ink-faint)">${timeAgo(p.createdAt)}</td>
+        <td><button class="action-btn danger" onclick="deletePost('${p._id}','${p.title.substring(0,30)}')">Delete</button></td>
+      </tr>`).join('');
+  } catch(e) { document.getElementById('postsTableBody').innerHTML = `<tr><td colspan="6" style="padding:24px;text-align:center;color:var(--ink-muted)">Failed to load posts.</td></tr>`; }
+}
+
+window.deletePost = async (id, title) => {
+  if (!confirm(`Permanently delete "${title}..."?`)) return;
+  try { await api.delete(`/admin/posts/${id}`); toast('Post removed', 'success'); loadPosts(); }
+  catch(e) { toast(e.message||'Failed', 'error'); }
+};
+
+// ── Reports ─────────────────────────────────────────────────────────────────
+async function loadReports() {
+  const status     = document.getElementById('reportStatusFilter')?.value || 'pending';
+  const targetType = document.getElementById('reportTypeFilter')?.value || '';
+  const params     = new URLSearchParams({ status, limit: 30 });
+  if (targetType) params.set('targetType', targetType);
+  document.getElementById('reportsList').innerHTML = `<div style="text-align:center;padding:40px"><div class="spinner" style="margin:0 auto"></div></div>`;
+  try {
+    const res     = await api.get(`/admin/reports?${params}`);
+    const reports = res?.data?.reports || [];
+    if (!reports.length) { document.getElementById('reportsList').innerHTML = `<div class="section" style="text-align:center;padding:40px"><div style="font-size:40px;margin-bottom:12px">✅</div><p style="color:var(--ink-muted)">No ${status} reports.</p></div>`; return; }
+    document.getElementById('reportsList').innerHTML = reports.map(r => `
+      <div class="section" style="margin-bottom:12px">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">
+          <div>
+            <span class="badge badge-${r.status}" style="margin-right:8px">${r.status}</span>
+            <span style="font-size:13px;font-weight:600">${r.targetType}</span>
+            <span style="font-size:13px;color:var(--ink-muted)"> reported for </span>
+            <span style="font-size:13px;font-weight:600">${r.reason}</span>
+          </div>
+          <span style="font-size:12px;color:var(--ink-faint)">${timeAgo(r.createdAt)}</span>
+        </div>
+        ${r.description ? `<p style="font-size:13px;color:var(--ink-muted);margin-bottom:10px;padding:10px;background:var(--paper-warm);border-radius:6px">"${r.description}"</p>` : ''}
+        <div style="font-size:12px;color:var(--ink-faint);margin-bottom:12px">Reported by @${r.reporter?.username||'unknown'}</div>
+        ${r.status === 'pending' ? `
+          <div style="display:flex;gap:8px">
+            <button class="action-btn danger" onclick="resolveReport('${r._id}','resolved')">Remove content</button>
+            <button class="action-btn" onclick="resolveReport('${r._id}','reviewed')">Mark reviewed</button>
+            <button class="action-btn" onclick="resolveReport('${r._id}','dismissed')">Dismiss</button>
+          </div>` : `<span style="font-size:12px;color:var(--ink-faint)">Reviewed ${r.reviewedAt ? timeAgo(r.reviewedAt) : ''}</span>`}
+      </div>`).join('');
+  } catch(e) { document.getElementById('reportsList').innerHTML = `<div class="section" style="text-align:center;padding:32px;color:var(--ink-muted)">Failed to load reports.</div>`; }
+}
+
+window.resolveReport = async (id, status) => {
+  const resolution = status === 'resolved' ? prompt('Resolution note (optional):') || 'Content removed' : undefined;
+  try { await api.put(`/admin/reports/${id}`, { status, resolution }); toast(`Report ${status}`, 'success'); loadReports(); }
+  catch(e) { toast(e.message||'Failed', 'error'); }
+};
+
+loadStats();
+
+// Expose formatCount and timeAgo
+window.formatCount = formatCount;
+window.timeAgo = timeAgo;
+</script>
+</body>
+</html>

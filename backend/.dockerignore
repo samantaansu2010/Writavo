@@ -1,0 +1,11 @@
+node_modules
+.env
+uploads/
+*.log
+.git
+.gitignore
+README.md
+Dockerfile
+.dockerignore
+coverage/
+tmp/

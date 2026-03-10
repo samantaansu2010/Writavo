@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bookmarks — Writavo</title>
+  <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./styles/main.css">
+  <link rel="stylesheet" href="./styles/components/components.css">
+</head>
+<body>
+<nav class="navbar">
+  <div class="navbar-left">
+    <a href="/discover.html" class="navbar-logo">Writav<span style="color:var(--accent)">o</span></a>
+  </div>
+  <div class="navbar-right"><a href="/write.html" class="btn btn-primary btn-sm">Write</a></div>
+</nav>
+
+<aside class="sidebar">
+  <div class="sidebar-top">
+    <a href="/discover.html" class="sidebar-item"><svg class="sidebar-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg><span class="sidebar-label">Home</span></a>
+    <a href="/write.html" class="sidebar-item"><svg class="sidebar-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg><span class="sidebar-label">Write</span></a>
+    <a href="/bookmarks.html" class="sidebar-item active"><svg class="sidebar-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/></svg><span class="sidebar-label">Bookmarks</span></a>
+    <a href="/profile.html" class="sidebar-item"><svg class="sidebar-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><span class="sidebar-label">Profile</span></a>
+  </div>
+  <div class="sidebar-footer">
+    <button class="sidebar-item w-full" onclick="window.toggleTheme()"><svg class="sidebar-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/></svg><span class="sidebar-label">Toggle theme</span></button>
+  </div>
+</aside>
+
+<main class="main-content">
+  <div class="container-wide" style="padding:32px 24px 80px">
+    <div style="max-width:720px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:28px">
+        <h1 style="font-family:var(--font-serif);font-size:28px;font-weight:700">🔖 Saved Stories</h1>
+        <span id="bookmarkCount" class="badge badge-default"></span>
+      </div>
+      <div id="bookmarksFeed"></div>
+      <div id="emptyState" style="display:none" class="empty-state">
+        <div class="empty-state-icon">🔖</div>
+        <h3 class="empty-state-title">No bookmarks yet</h3>
+        <p class="empty-state-desc">Save stories to read later by clicking the bookmark icon on any post.</p>
+        <a href="/discover.html" class="btn btn-primary">Explore stories</a>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script type="module">
+import api from './scripts/api.js';
+import { requireAuth, getAvatarHtml, timeAgo, formatCount, initTheme, setTheme, getTheme } from './scripts/utils/helpers.js';
+initTheme();
+window.toggleTheme = () => { const t = getTheme()==='dark'?'light':'dark'; setTheme(t); };
+requireAuth();
+
+async function load() {
+  document.getElementById('bookmarksFeed').innerHTML = `<div style="padding:40px 0;text-align:center"><div class="spinner" style="margin:0 auto"></div></div>`;
+  try {
+    const res = await api.get('/users/me/bookmarks');
+    const posts = res?.data?.posts || [];
+    const total = res?.pagination?.total || posts.length;
+    document.getElementById('bookmarkCount').textContent = `${total} saved`;
+    if (!posts.length) { document.getElementById('bookmarksFeed').innerHTML=''; document.getElementById('emptyState').style.display='block'; return; }
+    document.getElementById('bookmarksFeed').innerHTML = posts.map(p => p ? `
+      <div class="post-card" onclick="location.href='/post.html?slug=${p.slug}'" style="cursor:pointer">
+        <div class="post-card-body">
+          <div class="post-card-meta">
+            <div class="post-card-author">${getAvatarHtml(p.author,'xs')}<span class="post-card-author-name">${p.author?.displayName||p.author?.username||'Anonymous'}</span></div>
+            <span class="text-xs text-muted">· ${timeAgo(p.publishedAt||p.createdAt)}</span>
+            ${p.readingTime ? `<span class="text-xs text-muted">· ${p.readingTime} min</span>` : ''}
+          </div>
+          <div class="post-card-title">${p.title}</div>
+          ${p.excerpt ? `<div class="post-card-excerpt">${p.excerpt}</div>` : ''}
+          <div class="post-card-footer">
+            <div class="post-card-stats">
+              <span class="post-card-stat">❤️ ${formatCount(p.likeCount||0)}</span>
+              <span class="post-card-stat">💬 ${formatCount(p.commentCount||0)}</span>
+            </div>
+            <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();removeBookmark('${p._id}',this)">Remove</button>
+          </div>
+        </div>
+        ${p.coverImage?.url ? `<img class="post-card-thumb" src="${p.coverImage.url}" alt="" onerror="this.style.display='none'">` : ''}
+      </div>` : '').join('');
+  } catch(e) { document.getElementById('bookmarksFeed').innerHTML='<p class="text-muted" style="padding:32px 0">Failed to load bookmarks.</p>'; }
+}
+
+window.removeBookmark = async (id, btn) => {
+  try { await api.post(`/posts/${id}/bookmark`); btn.closest('.post-card').remove(); } catch(e) {}
+};
+
+load();
+</script>
+</body>
+</html>

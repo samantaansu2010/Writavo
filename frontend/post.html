@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Post — Writavo</title>
+  <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./styles/main.css">
+  <style>
+    .post-page{max-width:720px;margin:0 auto;padding:40px 20px 80px}
+    .post-category{font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);margin-bottom:12px}
+    .post-h1{font-family:var(--font-serif);font-size:clamp(28px,5vw,44px);font-weight:700;line-height:1.15;letter-spacing:-.5px;margin-bottom:14px}
+    .post-subtitle{font-family:var(--font-serif);font-size:20px;color:var(--ink-muted);font-style:italic;line-height:1.5;margin-bottom:24px}
+    .post-meta{display:flex;align-items:center;gap:16px;flex-wrap:wrap;padding:20px 0;border-top:1px solid var(--border);border-bottom:1px solid var(--border);margin-bottom:32px}
+    .post-author-link{display:flex;align-items:center;gap:10px;text-decoration:none}
+    .post-author-name{font-weight:500;font-size:15px}
+    .post-date{font-size:13px;color:var(--ink-muted)}
+    .post-actions{display:flex;align-items:center;gap:8px;margin-left:auto}
+    .post-cover{width:100%;border-radius:10px;margin-bottom:32px;max-height:460px;object-fit:cover}
+    .post-body{font-family:var(--font-serif);font-size:19px;line-height:1.85;color:var(--ink-soft)}
+    .post-body h2{font-size:26px;margin:32px 0 12px;color:var(--ink)}
+    .post-body h3{font-size:21px;margin:24px 0 10px;color:var(--ink)}
+    .post-body p{margin-bottom:20px}
+    .post-body blockquote{border-left:3px solid var(--accent);padding-left:24px;margin:28px 0;color:var(--ink-muted);font-style:italic;font-size:21px}
+    .post-body pre{background:var(--paper-warm);border:1px solid var(--border);border-radius:8px;padding:20px;font-family:monospace;font-size:14px;overflow-x:auto;margin:20px 0}
+    .post-body img{border-radius:8px;margin:20px 0;width:100%}
+    .post-body ul,.post-body ol{padding-left:24px;margin-bottom:20px}
+    .post-body li{margin-bottom:6px}
+    .post-body a{color:var(--accent);text-decoration:underline}
+    .post-footer{margin-top:48px;padding-top:32px;border-top:1px solid var(--border)}
+    .post-tags{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:32px}
+    .post-engagement{display:flex;align-items:center;gap:12px;padding:20px 0;border-top:1px solid var(--border);border-bottom:1px solid var(--border);flex-wrap:wrap}
+    .engage-btn{display:flex;align-items:center;gap:6px;padding:8px 16px;border:1.5px solid var(--border);border-radius:100px;background:none;cursor:pointer;font-size:14px;font-weight:500;transition:all .2s;font-family:inherit;color:var(--ink-soft)}
+    .engage-btn:hover{border-color:var(--ink);color:var(--ink)}
+    .engage-btn.liked{border-color:var(--accent);color:var(--accent);background:var(--accent-soft)}
+    .engage-btn.bookmarked{border-color:var(--ink);color:var(--ink)}
+    .author-card{background:var(--paper-warm);border:1px solid var(--border);border-radius:12px;padding:24px;margin-top:32px}
+    .author-card-header{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:12px}
+    .author-info{display:flex;align-items:center;gap:12px}
+    .author-name{font-family:var(--font-serif);font-size:18px;font-weight:600}
+    .author-bio{font-size:14px;color:var(--ink-muted);line-height:1.6}
+    /* Comments */
+    .comments-section{margin-top:48px}
+    .comments-title{font-family:var(--font-serif);font-size:22px;font-weight:600;margin-bottom:20px}
+    .comment-form{margin-bottom:28px;background:var(--paper-warm);border:1px solid var(--border);border-radius:10px;padding:16px}
+    .comment-input{width:100%;padding:10px 0;border:none;outline:none;background:none;font-size:15px;font-family:var(--font-sans);color:var(--ink);resize:none;min-height:72px}
+    .comment-form-footer{display:flex;justify-content:space-between;align-items:center;margin-top:10px;padding-top:10px;border-top:1px solid var(--border)}
+    .comment{display:flex;gap:12px;padding:18px 0;border-bottom:1px solid var(--border-soft)}
+    .comment:last-child{border-bottom:none}
+    .comment-body{flex:1;min-width:0}
+    .comment-header{display:flex;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap}
+    .comment-author-name{font-size:13px;font-weight:600}
+    .comment-time{font-size:12px;color:var(--ink-faint)}
+    .comment-text{font-size:15px;color:var(--ink-soft);line-height:1.65;white-space:pre-wrap}
+    .comment-actions{display:flex;align-items:center;gap:12px;margin-top:10px}
+    .comment-action-btn{background:none;border:none;cursor:pointer;font-size:12px;color:var(--ink-faint);display:flex;align-items:center;gap:4px;transition:color .15s;font-family:inherit;padding:0}
+    .comment-action-btn:hover{color:var(--ink)}
+    .comment-action-btn.liked{color:var(--accent)}
+    .comment-edit-area{width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:6px;background:var(--paper);font-size:14px;font-family:var(--font-sans);color:var(--ink);outline:none;resize:vertical;min-height:60px;margin-top:8px}
+    .reading-progress{position:fixed;top:60px;left:0;right:0;height:3px;background:var(--border);z-index:199}
+    .reading-progress-fill{height:100%;background:var(--accent);width:0%;transition:width .1s linear;border-radius:0 2px 2px 0}
+    /* Report modal */
+    .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);backdrop-filter:blur(4px);z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px}
+    .modal{background:var(--paper);border-radius:14px;padding:28px;max-width:480px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.2)}
+  </style>
+</head>
+<body>
+
+<!-- Reading progress bar -->
+<div class="reading-progress"><div class="reading-progress-fill" id="readingProgress"></div></div>
+
+<nav class="navbar">
+  <div class="navbar-left">
+    <a href="/discover.html" class="navbar-logo">Writav<span style="color:var(--accent)">o</span></a>
+  </div>
+  <div class="navbar-right" id="authNav"></div>
+</nav>
+
+<main class="main-content" style="margin-left:0">
+  <!-- Loading skeleton -->
+  <div id="loadingPost" style="max-width:720px;margin:60px auto;padding:40px 20px">
+    <div class="skeleton" style="height:14px;width:80px;margin-bottom:16px;border-radius:6px"></div>
+    <div class="skeleton" style="height:46px;width:90%;margin-bottom:10px;border-radius:6px"></div>
+    <div class="skeleton" style="height:46px;width:70%;margin-bottom:30px;border-radius:6px"></div>
+    <div class="skeleton" style="height:300px;border-radius:10px;margin-bottom:30px"></div>
+    <div class="skeleton" style="height:17px;width:100%;margin-bottom:10px;border-radius:4px"></div>
+    <div class="skeleton" style="height:17px;width:95%;margin-bottom:10px;border-radius:4px"></div>
+    <div class="skeleton" style="height:17px;width:80%;border-radius:4px"></div>
+  </div>
+  <div class="post-page" id="postPage" style="display:none"></div>
+</main>
+
+<!-- Report Modal -->
+<div class="modal-overlay" id="reportModal" style="display:none" onclick="if(event.target===this)closeReport()">
+  <div class="modal">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+      <h3 style="font-family:var(--font-serif);font-size:20px">Report content</h3>
+      <button onclick="closeReport()" style="background:none;border:none;cursor:pointer;font-size:20px;color:var(--ink-muted)">✕</button>
+    </div>
+    <p style="font-size:14px;color:var(--ink-muted);margin-bottom:16px">Help us keep Writavo safe. Select the reason:</p>
+    <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:20px" id="reportReasons">
+      <label style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:10px;border:1.5px solid var(--border);border-radius:8px;font-size:14px"><input type="radio" name="reportReason" value="spam"> Spam or misleading</label>
+      <label style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:10px;border:1.5px solid var(--border);border-radius:8px;font-size:14px"><input type="radio" name="reportReason" value="harassment"> Harassment or hate</label>
+      <label style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:10px;border:1.5px solid var(--border);border-radius:8px;font-size:14px"><input type="radio" name="reportReason" value="misinformation"> False information</label>
+      <label style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:10px;border:1.5px solid var(--border);border-radius:8px;font-size:14px"><input type="radio" name="reportReason" value="copyright"> Copyright violation</label>
+      <label style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:10px;border:1.5px solid var(--border);border-radius:8px;font-size:14px"><input type="radio" name="reportReason" value="other"> Other</label>
+    </div>
+    <textarea id="reportDesc" style="width:100%;padding:10px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;outline:none;resize:vertical;min-height:72px;font-family:inherit" placeholder="Additional details (optional)..."></textarea>
+    <div style="display:flex;gap:10px;margin-top:16px">
+      <button onclick="closeReport()" style="flex:1;padding:10px;border:1.5px solid var(--border);border-radius:8px;background:none;cursor:pointer;font-family:inherit;font-size:14px">Cancel</button>
+      <button onclick="submitReport()" style="flex:2;padding:10px;background:var(--red,#c43030);color:white;border:none;border-radius:8px;cursor:pointer;font-family:inherit;font-size:14px;font-weight:500">Submit report</button>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import api from './scripts/api.js';
+import { isLoggedIn, getUser, getAvatarHtml, timeAgo, formatCount, formatDate, toast, initTheme } from './scripts/utils/helpers.js';
+
+initTheme();
+const user = getUser();
+const loggedIn = isLoggedIn();
+
+document.getElementById('authNav').innerHTML = loggedIn && user
+  ? `<a href="/write.html" class="btn btn-primary btn-sm">✍️ Write</a>`
+  : `<a href="/login.html" class="btn btn-secondary btn-sm">Sign in</a><a href="/signup.html" class="btn btn-primary btn-sm">Join</a>`;
+
+const slug = new URLSearchParams(window.location.search).get('slug');
+if (!slug) { window.location.href = '/discover.html'; }
+
+let postData = null;
+let reportTarget = null;
+
+// ── Reading Progress ────────────────────────────────────────────────────────
+window.addEventListener('scroll', () => {
+  const body = document.getElementById('postPage');
+  if (!body) return;
+  const total = document.documentElement.scrollHeight - window.innerHeight;
+  const pct = total > 0 ? Math.min(100, (window.scrollY / total) * 100) : 0;
+  document.getElementById('readingProgress').style.width = pct + '%';
+});
+
+async function loadPost() {
+  try {
+    const res = await api.getPost(slug);
+    postData = res.data.post;
+    const isLiked = res.data.isLiked || false;
+    const isBookmarked = res.data.isBookmarked || false;
+    renderPost(postData, isLiked, isBookmarked);
+    document.title = `${postData.title} — Writavo`;
+    loadComments();
+    loadSimilarPosts(postData._id);
+    // Track view
+    api.track?.('post_view', { target: postData._id, targetType: 'Post' });
+  } catch(e) {
+    document.getElementById('loadingPost').innerHTML = `<div style="text-align:center;padding:80px 20px"><div style="font-size:48px;margin-bottom:16px">😕</div><h3 style="font-family:var(--font-serif)">Post not found</h3><p style="color:var(--ink-muted);margin:12px 0 24px">This post may have been removed or doesn't exist.</p><a href="/discover.html" style="padding:10px 20px;background:var(--ink);color:var(--paper);border-radius:7px;text-decoration:none;font-size:14px">Back to home</a></div>`;
+  }
+}
+
+function renderPost(p, liked, bookmarked) {
+  const a = p.author || {};
+  const isOwner = user && (user._id === a._id?.toString() || user.id === a._id?.toString());
+  document.getElementById('loadingPost').style.display = 'none';
+  const pg = document.getElementById('postPage');
+  pg.style.display = 'block';
+  pg.innerHTML = `
+    <div class="post-header">
+      <div class="post-category">${p.category || 'General'}</div>
+      <h1 class="post-h1">${p.title}</h1>
+      ${p.subtitle ? `<div class="post-subtitle">${p.subtitle}</div>` : ''}
+      <div class="post-meta">
+        <a class="post-author-link" href="/profile.html?user=${a.username}">
+          ${getAvatarHtml(a,'sm')}
+          <div>
+            <div class="post-author-name">${a.displayName || a.username || 'Anonymous'}</div>
+            <div class="post-date">${formatDate(p.publishedAt || p.createdAt)}</div>
+          </div>
+        </a>
+        <span class="post-date">· ${p.readingTime || 1} min read · ${formatCount(p.viewCount || 0)} views</span>
+        <div class="post-actions">
+          ${isOwner
+            ? `<a href="/write.html?id=${p._id}" style="padding:6px 14px;border:1.5px solid var(--border);border-radius:6px;font-size:13px;font-weight:500;text-decoration:none;color:var(--ink)">Edit</a>
+               <button onclick="adminDeleteOwn('${p._id}')" style="padding:6px 14px;border:1.5px solid var(--red,#c43030);border-radius:6px;font-size:13px;font-weight:500;background:none;cursor:pointer;color:var(--red,#c43030);font-family:inherit">Delete</button>`
+            : `<button id="followBtn" onclick="followAuthor('${a._id}', this)" style="padding:6px 14px;border:1.5px solid var(--border);border-radius:6px;font-size:13px;font-weight:500;background:none;cursor:pointer;font-family:inherit;color:var(--ink)">Follow</button>`
+          }
+        </div>
+      </div>
+    </div>
+    ${p.coverImage?.url ? `<img class="post-cover" src="${p.coverImage.url}" alt="${p.title}" onerror="this.style.display='none'">` : ''}
+    <div class="post-body">${p.body}</div>
+    <div class="post-footer">
+      <div class="post-tags">${(p.tags || []).map(t => `<a href="/discover.html?tag=${t}" style="display:inline-flex;align-items:center;padding:4px 12px;background:var(--paper-hover);color:var(--ink-muted);border-radius:100px;font-size:12px;text-decoration:none;border:1px solid var(--border-soft)">#${t}</a>`).join('')}</div>
+      <div class="post-engagement">
+        <button class="engage-btn ${liked ? 'liked' : ''}" id="likeBtn" onclick="toggleLike()">
+          <svg width="16" height="16" fill="${liked ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
+          <span id="likeCount">${formatCount(p.likeCount || 0)}</span> Likes
+        </button>
+        <button class="engage-btn ${bookmarked ? 'bookmarked' : ''}" id="bookmarkBtn" onclick="toggleBookmark()">
+          <svg width="16" height="16" fill="${bookmarked ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/></svg>
+          <span id="bookmarkLabel">${bookmarked ? 'Saved' : 'Save'}</span>
+        </button>
+        <button class="engage-btn" onclick="copyLink()">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+          Share
+        </button>
+        ${loggedIn && !isOwner ? `<button class="engage-btn" onclick="openReport('${p._id}','Post')" style="margin-left:auto;color:var(--ink-faint);border-color:transparent">⚑ Report</button>` : ''}
+      </div>
+      <!-- Author card -->
+      <div class="author-card">
+        <div class="author-card-header">
+          <a class="author-info" href="/profile.html?user=${a.username}" style="text-decoration:none;color:inherit">
+            ${getAvatarHtml(a,'md')}
+            <div>
+              <div class="author-name">${a.displayName || a.username}</div>
+              <div style="font-size:13px;color:var(--ink-muted)">${formatCount(a.totalFollowers || 0)} followers</div>
+            </div>
+          </a>
+          ${!isOwner && loggedIn ? `<button onclick="followAuthor('${a._id}', this)" style="padding:8px 18px;border:1.5px solid var(--border);border-radius:100px;background:none;cursor:pointer;font-size:13px;font-weight:500;font-family:inherit">Follow</button>` : ''}
+        </div>
+        <div class="author-bio">${a.bio || 'Writer on Writavo.'}</div>
+      </div>
+      <!-- Similar posts -->
+      <div id="similarPosts" style="margin-top:40px"></div>
+      <!-- Comments -->
+      <div class="comments-section">
+        <h3 class="comments-title">Comments <span style="font-size:16px;font-weight:400;color:var(--ink-muted)">(<span id="commentCountLabel">${p.commentCount || 0}</span>)</span></h3>
+        ${loggedIn
+          ? `<div class="comment-form">
+               <div style="display:flex;gap:10px">
+                 ${getAvatarHtml(user,'sm')}
+                 <textarea class="comment-input" id="commentInput" placeholder="What do you think? Share your perspective..." oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'"></textarea>
+               </div>
+               <div class="comment-form-footer">
+                 <span style="font-size:12px;color:var(--ink-faint)">Be respectful and constructive</span>
+                 <button onclick="submitComment()" style="padding:8px 18px;background:var(--ink);color:var(--paper);border:none;border-radius:6px;cursor:pointer;font-size:13px;font-weight:500;font-family:inherit">Post comment</button>
+               </div>
+             </div>`
+          : `<div style="padding:20px;background:var(--paper-warm);border:1px solid var(--border);border-radius:10px;text-align:center;margin-bottom:24px"><p style="color:var(--ink-muted);margin-bottom:12px">Join the conversation</p><a href="/login.html" style="padding:8px 18px;background:var(--ink);color:var(--paper);border-radius:6px;text-decoration:none;font-size:13px;font-weight:500">Sign in to comment</a></div>`
+        }
+        <div id="commentsList"><div style="text-align:center;padding:32px"><div class="spinner" style="margin:0 auto"></div></div></div>
+      </div>
+    </div>`;
+}
+
+// ── Like ─────────────────────────────────────────────────────────────────────
+window.toggleLike = async () => {
+  if (!loggedIn) { window.location.href = '/login.html'; return; }
+  try {
+    const res = await api.likePost(postData._id);
+    const btn = document.getElementById('likeBtn');
+    const svg = btn.querySelector('svg');
+    if (res.data.liked) { btn.classList.add('liked'); svg.setAttribute('fill','currentColor'); }
+    else { btn.classList.remove('liked'); svg.setAttribute('fill','none'); }
+    document.getElementById('likeCount').textContent = formatCount(res.data.likeCount || 0);
+  } catch(e) { toast('Action failed', 'error'); }
+};
+
+// ── Bookmark ─────────────────────────────────────────────────────────────────
+window.toggleBookmark = async () => {
+  if (!loggedIn) { window.location.href = '/login.html'; return; }
+  try {
+    const res = await api.post(`/posts/${postData._id}/bookmark`);
+    const btn = document.getElementById('bookmarkBtn');
+    const svg = btn.querySelector('svg');
+    const lbl = document.getElementById('bookmarkLabel');
+    if (res.data.bookmarked) { btn.classList.add('bookmarked'); svg.setAttribute('fill','currentColor'); lbl.textContent='Saved'; toast('🔖 Saved to bookmarks', 'success'); }
+    else { btn.classList.remove('bookmarked'); svg.setAttribute('fill','none'); lbl.textContent='Save'; toast('Bookmark removed', 'success'); }
+  } catch(e) { toast('Action failed', 'error'); }
+};
+
+// ── Follow ────────────────────────────────────────────────────────────────────
+window.followAuthor = async (authorId, btn) => {
+  if (!loggedIn) { window.location.href = '/login.html'; return; }
+  try {
+    const res = await api.followUser(authorId);
+    if (btn) btn.textContent = res.data.isFollowing ? 'Following' : 'Follow';
+    toast(res.data.isFollowing ? 'Now following! 🎉' : 'Unfollowed', 'success');
+  } catch(e) { toast('Action failed', 'error'); }
+};
+
+// ── Delete own post ──────────────────────────────────────────────────────────
+window.adminDeleteOwn = async (id) => {
+  if (!confirm('Permanently delete this post?')) return;
+  try {
+    await api.deletePost(id);
+    toast('Post deleted', 'success');
+    setTimeout(() => window.location.href = '/profile.html', 1000);
+  } catch(e) { toast('Delete failed', 'error'); }
+};
+
+// ── Share ─────────────────────────────────────────────────────────────────────
+window.copyLink = () => { navigator.clipboard.writeText(window.location.href); toast('Link copied!', 'success'); };
+
+// ── Comments ──────────────────────────────────────────────────────────────────
+async function loadComments() {
+  try {
+    const res = await api.getComments(postData._id);
+    const comments = res.data.comments || [];
+    const list = document.getElementById('commentsList');
+    if (!list) return;
+    if (!comments.length) {
+      list.innerHTML = '<p style="color:var(--ink-muted);font-size:14px;padding:16px 0">No comments yet. Be the first to share your thoughts!</p>';
+      return;
+    }
+    list.innerHTML = comments.map(c => renderComment(c)).join('');
+  } catch(e) {}
+}
+
+function renderComment(c) {
+  const isOwn = user && (user._id === c.author?._id?.toString() || user.id === c.author?._id?.toString());
+  return `<div class="comment" id="comment-${c._id}">
+    ${getAvatarHtml(c.author,'sm')}
+    <div class="comment-body">
+      <div class="comment-header">
+        <a href="/profile.html?user=${c.author?.username}" style="text-decoration:none;color:inherit">
+          <span class="comment-author-name">${c.author?.displayName || c.author?.username || 'Anonymous'}</span>
+        </a>
+        <span class="comment-time">${timeAgo(c.createdAt)}</span>
+        ${c.editedAt ? '<span class="comment-time">(edited)</span>' : ''}
+      </div>
+      <div class="comment-text" id="comment-text-${c._id}">${c.content}</div>
+      <div class="comment-actions">
+        <button class="comment-action-btn ${c.isLiked ? 'liked' : ''}" onclick="likeComment('${c._id}', this)">
+          <svg width="12" height="12" fill="${c.isLiked ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
+          <span>${c.likeCount || 0}</span>
+        </button>
+        ${loggedIn && !isOwn ? `<button class="comment-action-btn" onclick="replyToComment('${c._id}', '${c.author?.username}')">Reply</button>` : ''}
+        ${isOwn ? `<button class="comment-action-btn" onclick="startEditComment('${c._id}', this)">Edit</button>` : ''}
+        ${isOwn ? `<button class="comment-action-btn" style="color:var(--red,#c43030)" onclick="deleteComment('${c._id}')">Delete</button>` : ''}
+        ${loggedIn && !isOwn ? `<button class="comment-action-btn" onclick="openReport('${c._id}','Comment')" style="color:var(--ink-faint)">Report</button>` : ''}
+      </div>
+    </div>
+  </div>`;
+}
+
+window.submitComment = async () => {
+  const input = document.getElementById('commentInput');
+  const content = input?.value?.trim();
+  if (!content) return;
+  const btn = input.closest('.comment-form').querySelector('button');
+  btn.textContent = 'Posting...'; btn.disabled = true;
+  try {
+    await api.addComment(postData._id, { content });
+    input.value = '';
+    input.style.height = 'auto';
+    toast('Comment posted!', 'success');
+    loadComments();
+    const lbl = document.getElementById('commentCountLabel');
+    if (lbl) lbl.textContent = parseInt(lbl.textContent || 0) + 1;
+  } catch(e) { toast(e.message || 'Failed to post comment', 'error'); }
+  finally { btn.textContent = 'Post comment'; btn.disabled = false; }
+};
+
+window.likeComment = async (commentId, btn) => {
+  if (!loggedIn) { toast('Sign in to like', 'error'); return; }
+  try {
+    const res = await api.post(`/posts/${postData._id}/comments/${commentId}/like`);
+    const svg = btn.querySelector('svg');
+    if (res.data.liked) { btn.classList.add('liked'); svg.setAttribute('fill','currentColor'); }
+    else { btn.classList.remove('liked'); svg.setAttribute('fill','none'); }
+    const span = btn.querySelector('span');
+    if (span) span.textContent = res.data.likeCount ?? (parseInt(span.textContent)||0);
+  } catch(e) {}
+};
+
+window.replyToComment = (commentId, username) => {
+  const input = document.getElementById('commentInput');
+  if (!input) return;
+  input.value = `@${username} `;
+  input.focus();
+  input.dispatchEvent(new Event('input'));
+};
+
+window.startEditComment = (commentId, btn) => {
+  const textEl = document.getElementById(`comment-text-${commentId}`);
+  if (!textEl) return;
+  const current = textEl.textContent;
+  textEl.outerHTML = `<textarea class="comment-edit-area" id="edit-area-${commentId}">${current}</textarea>
+    <div style="display:flex;gap:8px;margin-top:8px">
+      <button onclick="saveEditComment('${commentId}')" style="padding:6px 14px;background:var(--ink);color:var(--paper);border:none;border-radius:6px;cursor:pointer;font-size:13px;font-family:inherit">Save</button>
+      <button onclick="cancelEdit('${commentId}','${current.replace(/'/g,"\\\'")}')" style="padding:6px 14px;border:1.5px solid var(--border);border-radius:6px;cursor:pointer;font-size:13px;background:none;font-family:inherit">Cancel</button>
+    </div>`;
+};
+
+window.saveEditComment = async (commentId) => {
+  const area = document.getElementById(`edit-area-${commentId}`);
+  const content = area?.value?.trim();
+  if (!content) return;
+  try {
+    const res = await api.put(`/posts/${postData._id}/comments/${commentId}`, { content });
+    loadComments();
+    toast('Comment updated', 'success');
+  } catch(e) { toast('Update failed', 'error'); }
+};
+
+window.cancelEdit = (commentId, original) => {
+  const area = document.getElementById(`edit-area-${commentId}`);
+  if (area) area.parentNode.innerHTML = `<div class="comment-text" id="comment-text-${commentId}">${original}</div>`;
+};
+
+window.deleteComment = async (commentId) => {
+  if (!confirm('Delete this comment?')) return;
+  try {
+    await api.delete(`/posts/${postData._id}/comments/${commentId}`);
+    document.getElementById(`comment-${commentId}`)?.remove();
+    const lbl = document.getElementById('commentCountLabel');
+    if (lbl) lbl.textContent = Math.max(0, parseInt(lbl.textContent || 1) - 1);
+    toast('Comment deleted', 'success');
+  } catch(e) { toast('Delete failed', 'error'); }
+};
+
+// ── Report ────────────────────────────────────────────────────────────────────
+window.openReport = (targetId, targetType) => {
+  if (!loggedIn) { window.location.href = '/login.html'; return; }
+  reportTarget = { id: targetId, type: targetType };
+  document.getElementById('reportModal').style.display = 'flex';
+};
+window.closeReport = () => { document.getElementById('reportModal').style.display = 'none'; reportTarget = null; };
+window.submitReport = async () => {
+  const reason = document.querySelector('input[name="reportReason"]:checked')?.value;
+  if (!reason) { toast('Please select a reason', 'error'); return; }
+  if (!reportTarget) return;
+  try {
+    await api.post('/admin/reports', { target: reportTarget.id, targetType: reportTarget.type, reason, description: document.getElementById('reportDesc').value });
+    toast('Report submitted. Thank you.', 'success');
+    closeReport();
+  } catch(e) { toast(e.message || 'Report failed', 'error'); }
+};
+
+// ── Similar Posts ─────────────────────────────────────────────────────────────
+async function loadSimilarPosts(postId) {
+  try {
+    const res = await api.getSimilarPosts(postId, 4);
+    const posts = res?.data?.posts || [];
+    const el = document.getElementById('similarPosts');
+    if (!posts.length || !el) return;
+    el.innerHTML = `<h3 style="font-family:var(--font-serif);font-size:20px;font-weight:600;margin-bottom:18px">More like this</h3>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px">
+        ${posts.map(p => `
+          <div onclick="location.href='/post.html?slug=${p.slug}'" style="background:var(--paper-warm);border:1px solid var(--border);border-radius:10px;overflow:hidden;cursor:pointer;transition:all .2s" onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 4px 16px rgba(0,0,0,.09)'" onmouseout="this.style.transform='';this.style.boxShadow=''">
+            ${p.coverImage?.url ? `<img src="${p.coverImage.url}" style="width:100%;height:96px;object-fit:cover" onerror="this.style.display='none'">` : ''}
+            <div style="padding:12px">
+              <div style="font-family:var(--font-serif);font-size:14px;font-weight:600;line-height:1.4;margin-bottom:8px">${p.title}</div>
+              <div style="font-size:12px;color:var(--ink-faint)">${p.readingTime||1} min · ❤️ ${formatCount(p.likeCount||0)}</div>
+            </div>
+          </div>`).join('')}
+      </div>`;
+  } catch(e) {}
+}
+
+loadPost();
+</script>
+</body>
+</html>

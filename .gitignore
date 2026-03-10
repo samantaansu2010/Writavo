@@ -1,0 +1,46 @@
+# ── Dependencies ──────────────────────────────────────────────────────────────
+node_modules/
+.npm
+
+# ── Environment & secrets ─────────────────────────────────────────────────────
+# FIX: Added backend/.env explicitly so it is NEVER committed to git
+.env
+.env.local
+.env.*.local
+backend/.env
+!.env.example
+!backend/.env.example
+
+# ── Build outputs ──────────────────────────────────────────────────────────────
+dist/
+build/
+.output/
+
+# ── Logs ──────────────────────────────────────────────────────────────────────
+logs/
+*.log
+npm-debug.log*
+
+# ── Uploads (user content) ────────────────────────────────────────────────────
+backend/uploads/
+uploads/
+
+# ── OS / editor ───────────────────────────────────────────────────────────────
+.DS_Store
+._*
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+*~
+
+# ── Testing ───────────────────────────────────────────────────────────────────
+coverage/
+.nyc_output/
+
+# ── Misc ──────────────────────────────────────────────────────────────────────
+*.gz
+*.zip
+*.tar
+.cache/
+tmp/

@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Write — Writavo</title>
+  <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./styles/main.css">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--paper); color: var(--ink); font-family: var(--font-sans); -webkit-font-smoothing: antialiased; }
+
+    /* ── Write Nav ── */
+    .write-nav {
+      position: fixed; top: 0; left: 0; right: 0; height: 60px;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 32px; background: var(--paper); border-bottom: 1px solid var(--border);
+      z-index: 100;
+    }
+    .write-nav-logo { font-family: var(--font-serif); font-size: 20px; font-weight: 700; letter-spacing: -0.5px; text-decoration: none; color: var(--ink); }
+    .write-nav-logo span { color: var(--accent); }
+    .write-nav-right { display: flex; align-items: center; gap: 10px; }
+    .word-count { font-size: 12px; color: var(--ink-faint); }
+    .save-status { font-size: 12px; color: var(--ink-faint); }
+    .save-status.saved { color: var(--green); }
+
+    /* ── Writing Canvas ── */
+    .write-canvas { max-width: 720px; margin: 0 auto; padding: 80px 20px 160px; }
+
+    .write-title {
+      font-family: var(--font-serif); font-size: clamp(28px, 5vw, 44px);
+      font-weight: 700; line-height: 1.15; letter-spacing: -0.5px;
+      border: none; outline: none; width: 100%; background: none;
+      color: var(--ink); resize: none; overflow: hidden;
+      margin-bottom: 14px;
+    }
+    .write-title::placeholder { color: var(--ink-faint); }
+
+    .write-subtitle {
+      font-family: var(--font-serif); font-size: 21px; font-weight: 400;
+      font-style: italic; color: var(--ink-muted); border: none; outline: none;
+      width: 100%; background: none; resize: none; overflow: hidden;
+      margin-bottom: 24px; line-height: 1.5;
+    }
+    .write-subtitle::placeholder { color: var(--ink-faint); }
+
+    .write-divider { height: 1px; background: var(--border); margin: 4px 0 28px; }
+
+    /* ── Floating Toolbar ── */
+    .float-toolbar {
+      position: fixed; background: var(--ink); color: var(--paper);
+      border-radius: 10px; padding: 6px 8px; display: none;
+      align-items: center; gap: 2px; z-index: 500;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.25);
+      transform: translateX(-50%);
+    }
+    .float-toolbar.visible { display: flex; }
+    .ft-btn {
+      width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;
+      border: none; background: none; color: var(--paper); cursor: pointer;
+      border-radius: 6px; font-size: 13px; font-weight: 600; transition: background 0.15s;
+    }
+    .ft-btn:hover { background: rgba(255,255,255,0.15); }
+    .ft-btn.active { background: rgba(255,255,255,0.2); }
+    .ft-sep { width: 1px; height: 20px; background: rgba(255,255,255,0.2); margin: 0 4px; }
+
+    /* ── Slash Command Menu ── */
+    .slash-menu {
+      position: fixed; background: var(--paper); border: 1px solid var(--border);
+      border-radius: 10px; box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+      z-index: 500; min-width: 240px; overflow: hidden;
+      animation: fadeInUp 0.15s ease;
+    }
+    @keyframes fadeInUp { from { opacity:0;transform:translateY(6px); } to { opacity:1;transform:translateY(0); } }
+    .slash-menu-item {
+      display: flex; align-items: center; gap: 12px; padding: 10px 14px;
+      cursor: pointer; transition: background 0.1s; font-size: 14px;
+    }
+    .slash-menu-item:hover, .slash-menu-item.selected { background: var(--paper-hover); }
+    .slash-menu-icon { width: 32px; height: 32px; border-radius: 7px; background: var(--paper-warm); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0; }
+    .slash-menu-label { font-weight: 500; }
+    .slash-menu-desc { font-size: 12px; color: var(--ink-muted); }
+    .slash-menu-title { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.07em; color: var(--ink-faint); padding: 10px 14px 6px; }
+
+    /* ── Editor Body ── */
+    #editorBody {
+      min-height: 480px; outline: none;
+      font-family: var(--font-serif); font-size: 19px; line-height: 1.85;
+      color: var(--ink-soft); caret-color: var(--ink);
+    }
+    #editorBody:empty::before { content: attr(data-placeholder); color: var(--ink-faint); pointer-events: none; }
+    #editorBody p { margin-bottom: 20px; }
+    #editorBody p:last-child { margin-bottom: 0; }
+    #editorBody h2 { font-family: var(--font-serif); font-size: 28px; font-weight: 700; color: var(--ink); margin: 40px 0 12px; letter-spacing: -0.3px; line-height: 1.2; }
+    #editorBody h3 { font-family: var(--font-serif); font-size: 22px; font-weight: 600; color: var(--ink); margin: 32px 0 10px; line-height: 1.3; }
+    #editorBody blockquote { border-left: 3px solid var(--accent); padding: 4px 0 4px 24px; margin: 32px 0; font-style: italic; font-size: 21px; color: var(--ink); }
+    #editorBody pre { background: var(--paper-warm); border: 1px solid var(--border); border-radius: 10px; padding: 20px 24px; font-family: 'Courier New', Courier, monospace; font-size: 14px; color: var(--ink); overflow-x: auto; margin: 24px 0; line-height: 1.6; }
+    #editorBody ul, #editorBody ol { margin: 0 0 20px 28px; }
+    #editorBody li { margin-bottom: 6px; line-height: 1.7; }
+    #editorBody hr { border: none; border-top: 1px solid var(--border); margin: 40px 0; }
+    #editorBody strong { font-weight: 700; color: var(--ink); }
+    #editorBody em { font-style: italic; }
+    #editorBody a { color: var(--accent); text-decoration: underline; }
+    #editorBody img { max-width: 100%; border-radius: 10px; margin: 24px 0; display: block; }
+    #editorBody .img-caption { text-align: center; font-size: 14px; color: var(--ink-muted); margin-top: -16px; margin-bottom: 24px; font-style: italic; }
+    #editorBody [data-block-type] { position: relative; }
+    #editorBody [data-block-type]:hover::before {
+      content: '⋮⋮'; position: absolute; left: -28px; top: 4px;
+      color: var(--ink-faint); font-size: 13px; cursor: grab; opacity: 0;
+      transition: opacity 0.15s;
+    }
+    #editorBody [data-block-type]:hover::before { opacity: 1; }
+
+    /* ── Bottom Publish Bar ── */
+    .publish-bar {
+      position: fixed; bottom: 0; left: 0; right: 0;
+      background: var(--paper); border-top: 1px solid var(--border);
+      padding: 14px 32px; display: flex; align-items: center; justify-content: space-between;
+      z-index: 100;
+    }
+    .publish-meta { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+    .meta-select {
+      padding: 8px 12px; border: 1.5px solid var(--border); border-radius: 8px;
+      background: var(--paper); color: var(--ink); font-size: 13px; outline: none;
+      font-family: var(--font-sans); cursor: pointer; transition: border-color 0.2s;
+    }
+    .meta-select:focus { border-color: var(--ink-faint); }
+    .tag-input {
+      padding: 8px 12px; border: 1.5px solid var(--border); border-radius: 8px;
+      background: var(--paper); color: var(--ink); font-size: 13px; outline: none;
+      font-family: var(--font-sans); min-width: 200px; transition: border-color 0.2s;
+    }
+    .tag-input:focus { border-color: var(--ink-faint); }
+    .tags-preview { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 6px; }
+    .tag-chip { display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px; background: var(--accent-soft); color: var(--accent); border-radius: 100px; font-size: 12px; font-weight: 500; }
+    .tag-chip button { border: none; background: none; color: var(--accent); cursor: pointer; font-size: 14px; line-height: 1; padding: 0; }
+
+    /* ── Modal ── */
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.45); backdrop-filter: blur(4px); z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 20px; }
+    .modal { background: var(--paper); border-radius: 16px; padding: 32px; max-width: 520px; width: 100%; box-shadow: 0 24px 80px rgba(0,0,0,0.18); }
+    .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+    .btn { display: inline-flex; align-items: center; gap: 8px; padding: 10px 20px; border-radius: 7px; font-size: 14px; font-weight: 500; cursor: pointer; border: none; outline: none; transition: all 0.2s; font-family: var(--font-sans); white-space: nowrap; }
+    .btn-primary { background: var(--ink); color: var(--paper); }
+    .btn-primary:hover { background: var(--ink-soft); transform: translateY(-1px); }
+    .btn-secondary { background: transparent; color: var(--ink); border: 1.5px solid var(--border); }
+    .btn-secondary:hover { background: var(--paper-hover); }
+    .btn-ghost { background: transparent; color: var(--ink-muted); }
+    .btn-ghost:hover { background: var(--paper-hover); color: var(--ink); }
+    .btn-sm { padding: 6px 14px; font-size: 13px; }
+    .btn-accent { background: var(--accent); color: white; }
+    .btn-accent:hover { background: var(--accent-dark); }
+    .btn-icon { padding: 8px; aspect-ratio: 1; justify-content: center; }
+    .form-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 18px; }
+    .form-label { font-size: 13px; font-weight: 500; color: var(--ink-soft); }
+    .form-input { padding: 10px 14px; border: 1.5px solid var(--border); border-radius: 7px; background: var(--paper); color: var(--ink); font-size: 15px; outline: none; transition: border-color 0.2s; font-family: var(--font-sans); }
+    .form-input:focus { border-color: var(--ink); }
+    .alert { padding: 12px 16px; border-radius: 8px; font-size: 14px; margin-bottom: 16px; }
+    .alert-error { background: var(--red-soft, #fce8e8); color: var(--red, #c43030); }
+    .toast-container { position: fixed; bottom: 80px; right: 24px; z-index: 9999; display: flex; flex-direction: column; gap: 8px; }
+    .toast { display: flex; align-items: center; gap: 12px; padding: 14px 20px; background: var(--ink); color: var(--paper); border-radius: 10px; font-size: 14px; font-weight: 500; box-shadow: 0 8px 24px rgba(0,0,0,0.15); min-width: 260px; animation: slideUp 0.3s ease; }
+    .toast.success { background: #2d7a4a; }
+    .toast.error { background: #c43030; }
+    .toast.warning { background: var(--accent); }
+    @keyframes slideUp { from { opacity:0;transform:translateY(16px); } to { opacity:1;transform:translateY(0); } }
+    [data-theme="dark"] body { background: #141412; color: #f0eeea; }
+  </style>
+</head>
+<body>
+
+<!-- Floating toolbar (shows on text select) -->
+<div class="float-toolbar" id="floatToolbar">
+  <button class="ft-btn" onclick="fmt('bold')" title="Bold"><b>B</b></button>
+  <button class="ft-btn" onclick="fmt('italic')" title="Italic"><i>I</i></button>
+  <button class="ft-btn" onclick="fmt('underline')" title="Underline"><u>U</u></button>
+  <div class="ft-sep"></div>
+  <button class="ft-btn" onclick="fmt('strikeThrough')" title="Strikethrough"><s>S</s></button>
+  <div class="ft-sep"></div>
+  <button class="ft-btn" onclick="insertLink()" title="Link" style="font-size:14px">🔗</button>
+</div>
+
+<!-- Slash command menu -->
+<div class="slash-menu" id="slashMenu" style="display:none">
+  <div class="slash-menu-title">Turn into</div>
+  <div class="slash-menu-item" onclick="insertBlock('h2')"><div class="slash-menu-icon"><b>H1</b></div><div><div class="slash-menu-label">Heading 1</div><div class="slash-menu-desc">Big section title</div></div></div>
+  <div class="slash-menu-item" onclick="insertBlock('h3')"><div class="slash-menu-icon"><b style="font-size:11px">H2</b></div><div><div class="slash-menu-label">Heading 2</div><div class="slash-menu-desc">Medium section title</div></div></div>
+  <div class="slash-menu-item" onclick="insertBlock('blockquote')"><div class="slash-menu-icon" style="font-size:16px">❝</div><div><div class="slash-menu-label">Quote</div><div class="slash-menu-desc">Pull quote or callout</div></div></div>
+  <div class="slash-menu-item" onclick="insertBlock('pre')"><div class="slash-menu-icon" style="font-size:11px;font-family:monospace">&lt;/&gt;</div><div><div class="slash-menu-label">Code Block</div><div class="slash-menu-desc">Monospaced code</div></div></div>
+  <div class="slash-menu-item" onclick="insertUL()"><div class="slash-menu-icon">•</div><div><div class="slash-menu-label">Bullet List</div><div class="slash-menu-desc">Unordered list</div></div></div>
+  <div class="slash-menu-item" onclick="insertOL()"><div class="slash-menu-icon" style="font-size:11px">1.</div><div><div class="slash-menu-label">Numbered List</div><div class="slash-menu-desc">Ordered list</div></div></div>
+  <div class="slash-menu-item" onclick="insertHR()"><div class="slash-menu-icon">—</div><div><div class="slash-menu-label">Divider</div><div class="slash-menu-desc">Horizontal rule</div></div></div>
+  <div class="slash-menu-item" onclick="triggerImageUpload()"><div class="slash-menu-icon">🖼</div><div><div class="slash-menu-label">Image</div><div class="slash-menu-desc">Upload from device</div></div></div>
+</div>
+
+<input type="file" id="imgUpload" accept="image/*" style="display:none" onchange="handleImageInsert(this)">
+
+<!-- Write Nav -->
+<nav class="write-nav">
+  <a href="/discover.html" class="write-nav-logo">Writav<span>o</span></a>
+  <div class="write-nav-right">
+    <span class="save-status" id="saveStatus">Unsaved</span>
+    <span class="word-count" id="wordCount">0 words</span>
+    <button class="btn btn-secondary btn-sm" onclick="saveDraft()" id="draftBtn">Save draft</button>
+    <button class="btn btn-accent btn-sm" onclick="openPublishModal()">Publish →</button>
+  </div>
+</nav>
+
+<!-- Writing Canvas -->
+<div class="write-canvas">
+  <textarea class="write-title" id="postTitle" placeholder="Your story title..." rows="1" oninput="autoResize(this);updateCount();markUnsaved()"></textarea>
+  <textarea class="write-subtitle" id="postSubtitle" placeholder="Add a subtitle (optional)..." rows="1" oninput="autoResize(this);markUnsaved()"></textarea>
+  <div class="write-divider"></div>
+
+  <!-- Cover image strip -->
+  <div id="coverImageStrip" style="display:none;margin-bottom:24px;position:relative">
+    <img id="coverImagePreview" style="width:100%;height:280px;object-fit:cover;border-radius:12px" src="" alt="Cover">
+    <button onclick="removeCover()" style="position:absolute;top:10px;right:10px;background:rgba(0,0,0,0.5);color:white;border:none;border-radius:50%;width:28px;height:28px;cursor:pointer;font-size:16px">✕</button>
+  </div>
+
+  <!-- The rich editor -->
+  <div
+    id="editorBody"
+    contenteditable="true"
+    spellcheck="true"
+    data-placeholder="Type '/' for commands, or just start writing your story..."
+    oninput="handleInput(event)"
+    onkeydown="handleKeydown(event)"
+    onmouseup="handleSelection()"
+    onkeyup="handleSelection()"
+  ></div>
+</div>
+
+<!-- Bottom Publish Bar -->
+<div class="publish-bar">
+  <div class="publish-meta">
+    <select class="meta-select" id="postCategory">
+      <option value="">Category</option>
+      <option value="Writing">Writing</option>
+      <option value="Technology">Technology</option>
+      <option value="Science">Science</option>
+      <option value="Art">Art</option>
+      <option value="Music">Music</option>
+      <option value="Travel">Travel</option>
+      <option value="Food">Food</option>
+      <option value="Health">Health</option>
+      <option value="Business">Business</option>
+      <option value="Education">Education</option>
+      <option value="Entertainment">Entertainment</option>
+      <option value="Other">Other</option>
+    </select>
+    <div>
+      <input class="tag-input" type="text" id="tagInput" placeholder="Add tags (press Enter)..." onkeydown="handleTagInput(event)">
+      <div class="tags-preview" id="tagsPreview"></div>
+    </div>
+    <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;color:var(--ink-muted)">
+      <input type="file" accept="image/*" style="display:none" onchange="setCoverImage(this)" id="coverUpload">
+      <button class="btn btn-ghost btn-sm" onclick="document.getElementById('coverUpload').click()">🖼 Cover image</button>
+    </label>
+  </div>
+  <div style="display:flex;align-items:center;gap:8px">
+    <button class="btn btn-secondary btn-sm" onclick="saveDraft()">💾 Save draft</button>
+    <button class="btn btn-accent btn-sm" onclick="openPublishModal()">Publish →</button>
+  </div>
+</div>
+
+<!-- Publish Modal -->
+<div class="modal-overlay" id="publishModal" style="display:none" onclick="if(event.target===this)this.style.display='none'">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 style="font-family:var(--font-serif);font-size:22px;font-weight:700">Publish your story</h3>
+      <button class="btn btn-ghost btn-icon btn-sm" onclick="document.getElementById('publishModal').style.display='none'">✕</button>
+    </div>
+    <div id="pubAlert" style="display:none" class="alert alert-error"></div>
+    <div class="form-group">
+      <label class="form-label">Status</label>
+      <select class="form-input" id="pubStatus">
+        <option value="published">Publish now</option>
+        <option value="draft">Save as draft</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">SEO meta description (optional)</label>
+      <input class="form-input" type="text" id="pubMeta" placeholder="Brief description for search engines..." maxlength="160">
+    </div>
+    <div style="background:var(--paper-warm);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:24px">
+      <div style="font-size:13px;font-weight:500;margin-bottom:8px">Publishing checklist</div>
+      <div id="pubChecklist" style="font-size:13px;color:var(--ink-muted);display:flex;flex-direction:column;gap:6px"></div>
+    </div>
+    <div style="display:flex;gap:10px">
+      <button class="btn btn-secondary" onclick="document.getElementById('publishModal').style.display='none'" style="flex:1">Cancel</button>
+      <button class="btn btn-accent" onclick="publishPost()" id="pubBtn" style="flex:2">Publish story 🚀</button>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { Auth, Posts, Media, toast } from './scripts/api.js';
+if (!Auth.requireLogin('write.html')) throw new Error('redirect');
+const getTheme = () => document.documentElement.getAttribute('data-theme') || 'light';
+
+initTheme();
+requireAuth();
+
+let postId = null;
+let tags = [];
+let autoSaveTimer = null;
+let isDirty = false;
+
+// Load existing post if editing
+const params = new URLSearchParams(window.location.search);
+const editId = params.get('id') || params.get('edit');
+if (editId) loadPost(editId);
+
+async function loadPost(id) {
+  try {
+    const res = await Posts.get(id);
+    const p = res.data.post;
+    postId = p._id;
+    document.getElementById('postTitle').value = p.title || '';
+    document.getElementById('postSubtitle').value = p.subtitle || '';
+    document.getElementById('editorBody').innerHTML = p.body || '';
+    if (p.category) document.getElementById('postCategory').value = p.category;
+    if (p.tags) { tags = p.tags; renderTags(); }
+    if (p.coverImage?.url) showCoverPreview(p.coverImage.url);
+    autoResize(document.getElementById('postTitle'));
+    autoResize(document.getElementById('postSubtitle'));
+    updateCount();
+    setStatus('saved');
+  } catch(e) { toast('Could not load post', 'error'); }
+}
+
+// ── Editor Logic ─────────────────────────────────────────────────────────
+let slashStart = null;
+let slashFilter = '';
+
+window.handleInput = (e) => {
+  markUnsaved();
+  updateCount();
+  const sel = window.getSelection();
+  if (!sel.rangeCount) return;
+  const range = sel.getRangeAt(0);
+  const node = range.startContainer;
+  const text = node.textContent || '';
+  const offset = range.startOffset;
+
+  // Detect '/' for slash command
+  if (text[offset - 1] === '/' && (offset === 1 || /\s/.test(text[offset - 2]))) {
+    slashStart = { node, offset: offset - 1 };
+    slashFilter = '';
+    showSlashMenu(range);
+  } else if (slashStart) {
+    if (text.includes('/')) {
+      slashFilter = text.slice(slashStart.offset + 1, offset).toLowerCase();
+      filterSlashMenu(slashFilter);
+    } else {
+      hideSlashMenu();
+    }
+  }
+
+  // Ensure editor always has at least one P element
+  if (!document.getElementById('editorBody').innerHTML.trim()) {
+    document.getElementById('editorBody').innerHTML = '';
+  }
+};
+
+window.handleKeydown = (e) => {
+  const menu = document.getElementById('slashMenu');
+  if (menu.style.display !== 'none') {
+    const items = menu.querySelectorAll('.slash-menu-item:not([style*="display:none"])');
+    const selected = menu.querySelector('.slash-menu-item.selected');
+    const idx = Array.from(items).indexOf(selected);
+    if (e.key === 'ArrowDown') { e.preventDefault(); items[Math.min(idx+1, items.length-1)]?.classList.add('selected'); selected?.classList.remove('selected'); }
+    if (e.key === 'ArrowUp') { e.preventDefault(); items[Math.max(idx-1, 0)]?.classList.add('selected'); selected?.classList.remove('selected'); }
+    if (e.key === 'Enter') { e.preventDefault(); (selected || items[0])?.click(); return; }
+    if (e.key === 'Escape') { hideSlashMenu(); return; }
+  }
+
+  // Enter creates a new paragraph (not div)
+  if (e.key === 'Enter' && !e.shiftKey) {
+    const sel = window.getSelection();
+    if (!sel.rangeCount) return;
+    const block = getBlockElement(sel.getRangeAt(0).startContainer);
+    // If in pre/blockquote, use shift+Enter for new block
+    if (block && (block.tagName === 'PRE' || block.tagName === 'BLOCKQUOTE')) return;
+    e.preventDefault();
+    insertParagraph();
+  }
+};
+
+function insertParagraph() {
+  document.execCommand('insertParagraph', false, null);
+  // Ensure new element is a P
+  const sel = window.getSelection();
+  if (sel.rangeCount) {
+    const node = sel.getRangeAt(0).startContainer;
+    const block = getBlockElement(node);
+    if (block && block.tagName === 'DIV') {
+      const p = document.createElement('p');
+      block.parentNode.replaceChild(p, block);
+      const range = document.createRange();
+      range.setStart(p, 0); range.collapse(true);
+      sel.removeAllRanges(); sel.addRange(range);
+    }
+  }
+}
+
+function getBlockElement(node) {
+  while (node && node !== document.getElementById('editorBody')) {
+    if (node.nodeType === 1 && /^(P|H[1-6]|BLOCKQUOTE|PRE|UL|OL|LI|DIV)$/.test(node.tagName)) return node;
+    node = node.parentNode;
+  }
+  return null;
+}
+
+// ── Floating Toolbar (on text select) ────────────────────────────────────
+window.handleSelection = () => {
+  setTimeout(() => {
+    const sel = window.getSelection();
+    const toolbar = document.getElementById('floatToolbar');
+    if (!sel.rangeCount || sel.isCollapsed || !sel.toString().trim()) {
+      toolbar.classList.remove('visible');
+      return;
+    }
+    const range = sel.getRangeAt(0);
+    const editor = document.getElementById('editorBody');
+    if (!editor.contains(range.startContainer)) { toolbar.classList.remove('visible'); return; }
+    const rect = range.getBoundingClientRect();
+    toolbar.style.top = `${rect.top + window.scrollY - 50}px`;
+    toolbar.style.left = `${rect.left + rect.width / 2}px`;
+    toolbar.classList.add('visible');
+    // Update active states
+    toolbar.querySelectorAll('.ft-btn').forEach(b => b.classList.remove('active'));
+    if (document.queryCommandState('bold'))      toolbar.querySelector('[title="Bold"]')?.classList.add('active');
+    if (document.queryCommandState('italic'))    toolbar.querySelector('[title="Italic"]')?.classList.add('active');
+    if (document.queryCommandState('underline')) toolbar.querySelector('[title="Underline"]')?.classList.add('active');
+  }, 10);
+};
+
+document.addEventListener('mousedown', (e) => {
+  if (!e.target.closest('#floatToolbar')) document.getElementById('floatToolbar').classList.remove('visible');
+  if (!e.target.closest('#slashMenu') && !e.target.closest('#editorBody')) hideSlashMenu();
+});
+
+// ── Slash Command Menu ───────────────────────────────────────────────────
+function showSlashMenu(range) {
+  const menu = document.getElementById('slashMenu');
+  const rect = range.getBoundingClientRect();
+  menu.style.top = `${rect.bottom + window.scrollY + 8}px`;
+  menu.style.left = `${rect.left}px`;
+  menu.style.display = 'block';
+  menu.querySelectorAll('.slash-menu-item')[0]?.classList.add('selected');
+}
+
+function hideSlashMenu() {
+  document.getElementById('slashMenu').style.display = 'none';
+  slashStart = null;
+  slashFilter = '';
+}
+
+function filterSlashMenu(q) {
+  const items = document.querySelectorAll('.slash-menu-item');
+  items.forEach(item => {
+    const label = item.querySelector('.slash-menu-label')?.textContent.toLowerCase() || '';
+    item.style.display = label.includes(q) ? '' : 'none';
+  });
+}
+
+function clearSlashText() {
+  if (!slashStart) return;
+  const { node, offset } = slashStart;
+  const range = document.createRange();
+  const currentOffset = window.getSelection().getRangeAt(0).startOffset;
+  range.setStart(node, offset);
+  range.setEnd(node, currentOffset);
+  range.deleteContents();
+  slashStart = null;
+}
+
+// ── Block Insertion ───────────────────────────────────────────────────────
+window.insertBlock = (tag) => {
+  hideSlashMenu();
+  clearSlashText();
+  document.getElementById('editorBody').focus();
+  document.execCommand('formatBlock', false, tag);
+  markUnsaved();
+};
+
+window.insertUL = () => { hideSlashMenu(); clearSlashText(); document.getElementById('editorBody').focus(); document.execCommand('insertUnorderedList', false, null); markUnsaved(); };
+window.insertOL = () => { hideSlashMenu(); clearSlashText(); document.getElementById('editorBody').focus(); document.execCommand('insertOrderedList', false, null); markUnsaved(); };
+window.insertHR = () => {
+  hideSlashMenu(); clearSlashText();
+  document.getElementById('editorBody').focus();
+  document.execCommand('insertHTML', false, '<hr><p><br></p>');
+  markUnsaved();
+};
+
+window.fmt = (cmd) => {
+  document.getElementById('editorBody').focus();
+  document.execCommand(cmd, false, null);
+  markUnsaved();
+};
+
+window.insertLink = () => {
+  const sel = window.getSelection();
+  const text = sel.toString();
+  const url = prompt('Enter URL:', 'https://');
+  if (!url) return;
+  document.getElementById('editorBody').focus();
+  if (text) document.execCommand('createLink', false, url);
+  else document.execCommand('insertHTML', false, `<a href="${url}" target="_blank">${url}</a>`);
+  document.getElementById('floatToolbar').classList.remove('visible');
+  markUnsaved();
+};
+
+// ── Image Upload ──────────────────────────────────────────────────────────
+window.triggerImageUpload = () => { hideSlashMenu(); document.getElementById('imgUpload').click(); };
+
+window.handleImageInsert = async (input) => {
+  if (!input.files[0]) return;
+  const placeholder = `<p><em style="color:var(--ink-faint)">Uploading image...</em></p>`;
+  document.getElementById('editorBody').focus();
+  document.execCommand('insertHTML', false, placeholder);
+  try {
+    const fd = new FormData();
+    fd.append('file', input.files[0]);
+    fd.append('mediaType', 'image');
+    const _file = fd instanceof FormData ? fd.get('file') : fd;
+      const _type = fd instanceof FormData ? (fd.get('mediaType') || 'image') : 'image';
+      const res = await Media.upload(_file, _type);
+    const url = res.data.media.url.startsWith('http') ? res.data.media.url : `${window.location.origin}${res.data.media.url}`;
+    // Replace placeholder with actual image
+    const editor = document.getElementById('editorBody');
+    editor.innerHTML = editor.innerHTML.replace(placeholder, `<img src="${url}" alt="Image" style="max-width:100%;border-radius:10px;margin:24px 0">`);
+    toast('Image inserted!', 'success');
+  } catch(e) {
+    const editor = document.getElementById('editorBody');
+    editor.innerHTML = editor.innerHTML.replace(placeholder, '');
+    toast('Image upload failed. Make sure server is running.', 'error');
+  }
+  input.value = '';
+  markUnsaved();
+};
+
+// ── Cover Image ───────────────────────────────────────────────────────────
+window.setCoverImage = async (input) => {
+  if (!input.files[0]) return;
+  try {
+    const fd = new FormData();
+    fd.append('file', input.files[0]);
+    fd.append('mediaType', 'banner');
+    const res = await Media.upload(fd.get('file'), fd.get('mediaType') || 'image');
+    const url = res.data.media.url.startsWith('http') ? res.data.media.url : `${window.location.origin}${res.data.media.url}`;
+    showCoverPreview(url);
+    markUnsaved();
+  } catch(e) { toast('Cover upload failed', 'error'); }
+};
+
+function showCoverPreview(url) {
+  document.getElementById('coverImagePreview').src = url;
+  document.getElementById('coverImageStrip').style.display = 'block';
+}
+
+window.removeCover = () => {
+  document.getElementById('coverImageStrip').style.display = 'none';
+  document.getElementById('coverImagePreview').src = '';
+  markUnsaved();
+};
+
+// ── Tag System ────────────────────────────────────────────────────────────
+window.handleTagInput = (e) => {
+  if (e.key === 'Enter' || e.key === ',') {
+    e.preventDefault();
+    const val = document.getElementById('tagInput').value.trim().replace(/,/g,'').toLowerCase();
+    if (val && !tags.includes(val) && tags.length < 5) {
+      tags.push(val);
+      renderTags();
+      document.getElementById('tagInput').value = '';
+      markUnsaved();
+    }
+  }
+};
+
+function renderTags() {
+  document.getElementById('tagsPreview').innerHTML = tags.map((t,i) => `
+    <span class="tag-chip">#${t}<button onclick="removeTag(${i})">×</button></span>`).join('');
+}
+
+window.removeTag = (i) => { tags.splice(i, 1); renderTags(); markUnsaved(); };
+
+// ── Save & Publish ────────────────────────────────────────────────────────
+window.autoResize = (el) => { el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px'; };
+window.updateCount = () => {
+  const text = document.getElementById('editorBody').innerText || '';
+  const words = text.trim().split(/\s+/).filter(Boolean).length;
+  document.getElementById('wordCount').textContent = `${words} word${words!==1?'s':''}`;
+};
+
+function markUnsaved() {
+  isDirty = true;
+  setStatus('unsaved');
+  clearTimeout(autoSaveTimer);
+  autoSaveTimer = setTimeout(() => { if (isDirty) autoSave(); }, 8000);
+}
+
+function setStatus(s) {
+  const el = document.getElementById('saveStatus');
+  if (s === 'saved') { el.textContent = '✓ Saved'; el.className = 'save-status saved'; }
+  else if (s === 'saving') { el.textContent = 'Saving...'; el.className = 'save-status'; }
+  else { el.textContent = 'Unsaved'; el.className = 'save-status'; }
+}
+
+async function autoSave() {
+  const title = document.getElementById('postTitle').value.trim();
+  if (!title) return;
+  await doSave('draft', true);
+}
+
+window.saveDraft = async () => doSave('draft', false);
+
+async function doSave(status, silent) {
+  const title = document.getElementById('postTitle').value.trim();
+  const body = document.getElementById('editorBody').innerHTML.trim();
+  if (!title) { if (!silent) toast('Add a title first', 'warning'); return; }
+  if (!body) { if (!silent) toast('Write something first', 'warning'); return; }
+
+  setStatus('saving');
+  const btn = document.getElementById('draftBtn');
+  if (!silent) { btn.textContent = 'Saving...'; btn.disabled = true; }
+
+  try {
+    const coverUrl = document.getElementById('coverImagePreview').src;
+    const data = {
+      title,
+      subtitle: document.getElementById('postSubtitle').value.trim(),
+      body, tags, status,
+      category: document.getElementById('postCategory').value || 'Other',
+      coverImage: coverUrl ? { url: coverUrl } : undefined,
+    };
+    if (postId) await Posts.update(postId, data);
+    else {
+      const res = await Posts.create(data);
+      postId = res.data.post._id;
+      window.history.replaceState({}, '', `?id=${postId}`);
+    }
+    isDirty = false;
+    setStatus('saved');
+    if (!silent) toast('Draft saved ✓', 'success');
+  } catch(e) {
+    setStatus('unsaved');
+    if (!silent) toast(e.message || 'Save failed', 'error');
+  } finally {
+    if (!silent) { btn.textContent = 'Save draft'; btn.disabled = false; }
+  }
+}
+
+window.openPublishModal = () => {
+  const title = document.getElementById('postTitle').value.trim();
+  if (!title) { toast('Add a title first', 'warning'); return; }
+  const body = document.getElementById('editorBody').innerHTML.trim();
+  if (!body) { toast('Write some content first', 'warning'); return; }
+
+  // Checklist
+  const checks = [
+    { label: 'Title', ok: !!title },
+    { label: 'Content', ok: !!body && document.getElementById('editorBody').innerText.trim().length > 100 },
+    { label: 'Category', ok: !!document.getElementById('postCategory').value },
+    { label: 'Tags', ok: tags.length > 0 },
+    { label: 'Cover image', ok: !!document.getElementById('coverImagePreview').src },
+  ];
+  document.getElementById('pubChecklist').innerHTML = checks.map(c =>
+    `<div>${c.ok ? '✅' : '⬜'} ${c.label}${!c.ok ? ' <span style="color:var(--ink-faint)">(optional but recommended)</span>' : ''}</div>`
+  ).join('');
+  document.getElementById('publishModal').style.display = 'flex';
+};
+
+window.publishPost = async () => {
+  const status = document.getElementById('pubStatus').value;
+  const btn = document.getElementById('pubBtn');
+  const alert = document.getElementById('pubAlert');
+  btn.textContent = 'Publishing...'; btn.disabled = true;
+  alert.style.display = 'none';
+  try {
+    await doSave(status, true);
+    if (status === 'published') {
+      toast('Published successfully! 🎉', 'success');
+      setTimeout(() => window.location.href = '/profile.html', 1200);
+    } else {
+      toast('Saved as draft', 'success');
+      document.getElementById('publishModal').style.display = 'none';
+    }
+  } catch(e) {
+    alert.textContent = e.message || 'Publish failed'; alert.style.display = 'block';
+  } finally { btn.textContent = 'Publish story 🚀'; btn.disabled = false; }
+};
+
+// ── Warn on unsaved leave ─────────────────────────────────────────────────
+window.addEventListener('beforeunload', (e) => {
+  if (isDirty) { e.preventDefault(); e.returnValue = ''; }
+});
+
+// Paste: strip formatting except structure
+document.getElementById('editorBody').addEventListener('paste', (e) => {
+  e.preventDefault();
+  const html = e.clipboardData.getData('text/html');
+  const text = e.clipboardData.getData('text/plain');
+  if (html) {
+    // Allow basic formatting
+    const div = document.createElement('div');
+    div.innerHTML = html;
+    // Remove styles, scripts, classes
+    div.querySelectorAll('style,script,link').forEach(el => el.remove());
+    div.querySelectorAll('*').forEach(el => { el.removeAttribute('style'); el.removeAttribute('class'); el.removeAttribute('id'); });
+    document.execCommand('insertHTML', false, div.innerHTML);
+  } else {
+    document.execCommand('insertText', false, text);
+  }
+});
+
+// ── Toast helper ──────────────────────────────────────────────────────────
+window.toast = (msg, type='default', dur=4000) => {
+  let c = document.querySelector('.toast-container');
+  if (!c) { c = document.createElement('div'); c.className='toast-container'; document.body.appendChild(c); }
+  const t = document.createElement('div');
+  t.className = `toast ${type}`;
+  t.textContent = msg;
+  c.appendChild(t);
+  setTimeout(() => { t.style.opacity='0'; t.style.transition='0.3s'; setTimeout(()=>t.remove(),300); }, dur);
+};
+</script>
+</body>
+</html>

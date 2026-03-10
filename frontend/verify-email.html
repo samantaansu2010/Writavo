@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Verify Email — Writavo</title>
+<link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Source+Sans+3:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:'Source Sans 3',sans-serif;background:#f7f6f2;color:#222;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px}
+  .card{background:white;border:1px solid #ddd;border-radius:10px;padding:44px 40px;max-width:460px;width:100%;text-align:center;box-shadow:0 4px 24px rgba(0,0,0,0.07)}
+  .logo{font-family:'Libre Baskerville',serif;font-size:1.6rem;font-weight:700;color:#2c3e6b;margin-bottom:28px;display:block;text-decoration:none}
+  .icon{font-size:3.2rem;margin-bottom:16px;display:block}
+  h1{font-family:'Libre Baskerville',serif;font-size:1.5rem;color:#1a1a2e;margin-bottom:10px}
+  .subtitle{font-size:0.93rem;color:#666;line-height:1.7;margin-bottom:28px;font-weight:300}
+  .email-highlight{font-weight:600;color:#2c3e6b}
+  .btn{display:inline-block;padding:11px 32px;border-radius:5px;font-family:'Source Sans 3',sans-serif;font-size:0.92rem;font-weight:600;cursor:pointer;border:none;transition:opacity .2s;text-decoration:none}
+  .btn-primary{background:#2c3e6b;color:white;width:100%;margin-bottom:10px}
+  .btn-primary:hover{opacity:.88}
+  .btn-ghost{background:transparent;color:#2c3e6b;border:1.5px solid #2c3e6b;width:100%}
+  .btn-ghost:hover{background:#eef0f8}
+  .divider{height:1px;background:#eee;margin:20px 0}
+  .small{font-size:0.8rem;color:#999;line-height:1.6}
+  .small a{color:#2c3e6b}
+  .status-box{padding:14px 18px;border-radius:6px;font-size:0.88rem;margin-bottom:18px;display:none}
+  .status-box.success{background:#f0fdf4;border:1.5px solid #86efac;color:#166534}
+  .status-box.error{background:#fff1f2;border:1.5px solid #fca5a5;color:#991b1b}
+  .status-box.show{display:block}
+  .spinner{width:18px;height:18px;border:2.5px solid rgba(255,255,255,.4);border-top-color:white;border-radius:50%;animation:spin .7s linear infinite;display:inline-block;vertical-align:middle;margin-right:6px}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .checking-state{text-align:center;padding:20px 0}
+</style>
+</head>
+<body>
+<div class="card">
+  <a href="index.html" class="logo">Writavo</a>
+
+  <div id="checkingState" class="checking-state">
+    <span class="icon">⏳</span>
+    <h1>Verifying your email…</h1>
+    <p class="subtitle">Please wait a moment.</p>
+  </div>
+
+  <div id="mainState" style="display:none">
+    <span class="icon" id="stateIcon">📧</span>
+    <h1 id="stateTitle">Check your inbox</h1>
+    <p class="subtitle" id="stateSubtitle">
+      We sent a verification link to <span class="email-highlight" id="emailDisplay"></span>.
+      Click the link in the email to activate your account.
+    </p>
+
+    <div class="status-box" id="statusBox"></div>
+
+    <button class="btn btn-primary" id="resendBtn" onclick="resendEmail()">
+      Resend verification email
+    </button>
+    <a href="login.html" class="btn btn-ghost">Back to Login</a>
+
+    <div class="divider"></div>
+    <p class="small">
+      Wrong email? <a href="signup.html">Sign up again</a> with the correct address.<br>
+      Check your spam folder if you don't see the email.
+    </p>
+  </div>
+
+  <div id="successState" style="display:none">
+    <span class="icon">🎉</span>
+    <h1>Email Verified!</h1>
+    <p class="subtitle">Your account is now active. Welcome to Writavo!</p>
+    <a href="discover.html" class="btn btn-primary">Start Exploring →</a>
+  </div>
+</div>
+
+<script type="module">
+  import { API } from './scripts/api.js';
+
+  const params   = new URLSearchParams(location.search);
+  const token    = params.get('token');
+  const email    = params.get('email') || localStorage.getItem('pendingEmail') || '';
+  let   resendCooldown = false;
+
+  document.getElementById('emailDisplay').textContent = email;
+
+  async function init() {
+    if (token) {
+      // Arrived via link in email — auto-verify
+      try {
+        await API.post('/auth/verify-email', { token });
+        show('successState');
+        // Update stored user if logged in
+        const me = JSON.parse(localStorage.getItem('user') || 'null');
+        if (me) { me.emailVerified = true; localStorage.setItem('user', JSON.stringify(me)); }
+      } catch (e) {
+        show('mainState');
+        showStatus('error', e.message || 'Verification link is invalid or expired. Request a new one below.');
+      }
+    } else {
+      show('mainState');
+    }
+  }
+
+  function show(id) {
+    ['checkingState','mainState','successState'].forEach(s => {
+      document.getElementById(s).style.display = s === id ? 'block' : 'none';
+    });
+  }
+
+  function showStatus(type, msg) {
+    const box = document.getElementById('statusBox');
+    box.textContent = msg;
+    box.className = `status-box ${type} show`;
+  }
+
+  window.resendEmail = async function() {
+    if (resendCooldown) return;
+    if (!email) { showStatus('error', 'No email found. Please sign up again.'); return; }
+    const btn = document.getElementById('resendBtn');
+    btn.innerHTML = '<span class="spinner"></span>Sending…';
+    btn.disabled  = true;
+    try {
+      await API.post('/auth/resend-verification', { email });
+      showStatus('success', '✅ New verification email sent! Check your inbox.');
+      resendCooldown = true;
+      let sec = 60;
+      const iv = setInterval(() => {
+        btn.textContent = `Resend again in ${--sec}s`;
+        if (sec <= 0) { clearInterval(iv); btn.textContent = 'Resend verification email'; btn.disabled = false; resendCooldown = false; }
+      }, 1000);
+    } catch (e) {
+      showStatus('error', e.message || 'Failed to resend. Try again shortly.');
+      btn.textContent = 'Resend verification email';
+      btn.disabled = false;
+    }
+  };
+
+  init();
+</script>
+</body>
+</html>

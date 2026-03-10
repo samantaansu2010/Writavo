@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Profile — Writavo</title>
+  <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./styles/main.css">
+  <link rel="stylesheet" href="./styles/components/components.css">
+  <style>
+    .profile-page { max-width:860px;margin:0 auto;padding:32px 20px 80px; }
+    .profile-banner { height:220px;background:linear-gradient(135deg,var(--paper-hover),var(--border));border-radius:12px;margin-bottom:-60px;overflow:hidden;position:relative; }
+    .profile-banner img { width:100%;height:100%;object-fit:cover; }
+    .profile-header { padding:0 0 24px;position:relative; }
+    .profile-avatar-wrap { margin-top:0;margin-bottom:12px;display:flex;justify-content:space-between;align-items:flex-end; }
+    .profile-avatar { width:96px;height:96px;border-radius:50%;border:4px solid var(--paper);object-fit:cover; }
+    .profile-name { font-family:var(--font-serif);font-size:26px;font-weight:700;margin-bottom:2px; }
+    .profile-username { font-size:14px;color:var(--ink-muted);margin-bottom:10px; }
+    .profile-bio { font-size:15px;color:var(--ink-soft);line-height:1.65;max-width:540px;margin-bottom:14px; }
+    .profile-stats { display:flex;gap:28px;margin-bottom:14px; }
+    .profile-stat { cursor:pointer; }
+    .profile-stat-num { font-family:var(--font-serif);font-size:20px;font-weight:700; }
+    .profile-stat-label { font-size:12px;color:var(--ink-muted); }
+    .profile-tabs { display:flex;border-bottom:1px solid var(--border);margin-bottom:28px; }
+    .profile-tab { padding:10px 20px;font-size:14px;font-weight:500;color:var(--ink-muted);cursor:pointer;border-bottom:2px solid transparent;transition:all .2s; }
+    .profile-tab.active { color:var(--ink);border-bottom-color:var(--ink); }
+  </style>
+</head>
+<body>
+<nav class="navbar">
+  <div class="navbar-left">
+    <a href="/discover.html" class="navbar-logo">Writav<span style="color:var(--accent)">o</span></a>
+  </div>
+  <div class="navbar-right" id="authNav"></div>
+</nav>
+
+<main class="main-content" style="margin-left:0">
+  <div class="profile-page">
+    <div id="profileContent">
+      <div class="skeleton" style="height:220px;border-radius:12px;margin-bottom:-60px"></div>
+      <div style="padding:72px 0 24px">
+        <div class="skeleton" style="width:96px;height:96px;border-radius:50%;margin-bottom:12px"></div>
+        <div class="skeleton" style="width:200px;height:26px;margin-bottom:8px;border-radius:6px"></div>
+        <div class="skeleton" style="width:120px;height:14px;margin-bottom:14px;border-radius:6px"></div>
+      </div>
+    </div>
+    <div id="postsList"></div>
+  </div>
+</main>
+
+<script type="module">
+import api from './scripts/api.js';
+import { isLoggedIn, getUser, getAvatarHtml, timeAgo, formatCount, toast, initTheme } from './scripts/utils/helpers.js';
+
+initTheme();
+const currentUser = getUser();
+const authNav = document.getElementById('authNav');
+authNav.innerHTML = isLoggedIn() && currentUser
+  ? `<div style="display:flex;gap:8px"><a href="/write.html" class="btn btn-primary btn-sm">✍️ Write</a><a href="/discover.html" class="btn btn-secondary btn-sm">Home</a></div>`
+  : `<a href="/login.html" class="btn btn-secondary btn-sm">Sign in</a><a href="/signup.html" class="btn btn-primary btn-sm">Join free</a>`;
+
+const params = new URLSearchParams(window.location.search);
+const targetUsername = params.get('user') || currentUser?.username;
+if (!targetUsername) { window.location.href='/discover.html'; }
+
+let profileUser = null, isOwner = false, currentTab = 'published';
+
+async function loadProfile() {
+  try {
+    const res = await api.getProfile(targetUsername);
+    profileUser = res.data.user;
+    let isFollowing = res.data.isFollowing;
+    isOwner = currentUser && (currentUser._id === profileUser._id || currentUser.id === profileUser._id || currentUser.username === profileUser.username);
+    document.title = `${profileUser.displayName||profileUser.username} — Writavo`;
+    renderProfile(profileUser, isFollowing);
+    loadPosts('published');
+  } catch(e) {
+    document.getElementById('profileContent').innerHTML = `<div style="text-align:center;padding:80px 20px"><h3 style="font-family:var(--font-serif)">User not found</h3><a href="/discover.html" class="btn btn-primary" style="margin-top:20px;display:inline-flex">Go home</a></div>`;
+  }
+}
+
+function renderProfile(u, isFollowing) {
+  const avatarHtml = u.avatar
+    ? `<img src="${u.avatar}" alt="${u.displayName}" class="profile-avatar">`
+    : getAvatarHtml(u,'xl').replace('class="avatar-placeholder avatar-xl"','class="profile-avatar" style="border-radius:50%;border:4px solid var(--paper)"');
+
+  document.getElementById('profileContent').innerHTML = `
+    <div class="profile-banner">${u.banner?`<img src="${u.banner}" alt="">`:''}</div>
+    <div class="profile-header" style="padding-top:8px">
+      <div class="profile-avatar-wrap">
+        ${avatarHtml}
+        <div>
+          ${isOwner
+            ? `<a href="/settings.html" class="btn btn-secondary btn-sm">Edit profile</a>`
+            : `<button class="btn btn-primary btn-sm" id="followBtn" onclick="toggleFollow('${u._id}')">${isFollowing?'Following':'Follow'}</button>`}
+        </div>
+      </div>
+      <div class="profile-name">${u.displayName||u.username}</div>
+      <div class="profile-username">@${u.username}</div>
+      ${u.bio?`<div class="profile-bio">${u.bio}</div>`:''}
+      ${u.website?`<a href="${u.website}" target="_blank" style="font-size:13px;color:var(--accent);margin-bottom:12px;display:block">🔗 ${u.website}</a>`:''}
+      <div class="profile-stats">
+        <div class="profile-stat" onclick="loadPosts('published')">
+          <div class="profile-stat-num">${formatCount(u.totalPosts||0)}</div>
+          <div class="profile-stat-label">Posts</div>
+        </div>
+        <div class="profile-stat">
+          <div class="profile-stat-num">${formatCount(u.totalFollowers||0)}</div>
+          <div class="profile-stat-label">Followers</div>
+        </div>
+        <div class="profile-stat">
+          <div class="profile-stat-num">${formatCount(u.totalFollowing||0)}</div>
+          <div class="profile-stat-label">Following</div>
+        </div>
+      </div>
+      ${u.interests?.length ? `<div class="tags">${u.interests.map(i=>`<span class="tag">${i}</span>`).join('')}</div>` : ''}
+    </div>
+    <div class="profile-tabs" id="profileTabs">
+      <div class="profile-tab active" onclick="switchTab('published',this)">Posts</div>
+      ${isOwner?`<div class="profile-tab" onclick="switchTab('draft',this)">Drafts</div>`:''}
+      <div class="profile-tab" onclick="switchTab('about',this)">About</div>
+    </div>`;
+}
+
+window.switchTab = (tab, el) => {
+  document.querySelectorAll('.profile-tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  currentTab = tab;
+  if (tab === 'about') showAbout();
+  else loadPosts(tab);
+};
+
+function showAbout() {
+  const u = profileUser;
+  document.getElementById('postsList').innerHTML = `
+    <div class="card" style="max-width:500px">
+      ${u.userType?`<div style="margin-bottom:12px"><span class="badge badge-accent">${u.userType}</span></div>`:''}
+      ${u.country?`<p style="font-size:14px;color:var(--ink-muted);margin-bottom:8px">📍 ${u.state?u.state+', ':''}${u.country}</p>`:''}
+      ${u.website?`<p style="font-size:14px;margin-bottom:8px">🔗 <a href="${u.website}" target="_blank" style="color:var(--accent)">${u.website}</a></p>`:''}
+      <p style="font-size:14px;color:var(--ink-muted)">📅 Joined ${new Date(u.createdAt).toLocaleDateString('en-US',{month:'long',year:'numeric'})}</p>
+    </div>`;
+}
+
+async function loadPosts(status) {
+  document.getElementById('postsList').innerHTML = '<div style="padding:20px 0">' + skeletons() + '</div>';
+  try {
+    const res = await api.getUserPosts(targetUsername, { status, limit: 20 });
+    const posts = res.data.posts || [];
+    if (!posts.length) {
+      document.getElementById('postsList').innerHTML = `<div style="text-align:center;padding:60px 20px"><div style="font-size:40px;margin-bottom:12px">📝</div><p class="text-muted">${status==='draft'?'No drafts yet.':'No published posts yet.'}</p>${isOwner?`<a href="/write.html" class="btn btn-primary" style="margin-top:16px;display:inline-flex">Write your first post</a>`:''}</div>`;
+      return;
+    }
+    document.getElementById('postsList').innerHTML = posts.map(p => `
+      <div class="post-card" onclick="location.href='/post.html?slug=${p.slug}'">
+        <div class="post-card-header">
+          <div style="display:flex;gap:8px;align-items:center">
+            <span class="badge ${p.status==='published'?'badge-green':'badge-default'}">${p.status}</span>
+            <span style="font-size:12px;color:var(--ink-faint)">${timeAgo(p.publishedAt||p.createdAt)}</span>
+          </div>
+          ${isOwner?`<a href="/write.html?edit=${p._id}" class="btn btn-secondary btn-sm" onclick="event.stopPropagation()">Edit</a>`:''}
+        </div>
+        <div class="post-card-body">
+          <div>
+            <div class="post-card-title">${p.title}</div>
+            <div class="post-card-excerpt">${(p.excerpt||p.body||'').replace(/<[^>]*>/g,'').substring(0,140)}</div>
+            <div class="post-card-footer">
+              <div class="post-card-stat">❤️ ${formatCount(p.likeCount||0)}</div>
+              <div class="post-card-stat">💬 ${formatCount(p.commentCount||0)}</div>
+              <span class="post-card-read-time">${p.readingTime||1} min read</span>
+            </div>
+          </div>
+          ${p.coverImage?.url?`<img src="${p.coverImage.url}" class="post-card-cover" onerror="this.style.display='none'">`:''}
+        </div>
+      </div>`).join('');
+  } catch(e) { document.getElementById('postsList').innerHTML = '<p class="text-muted" style="padding:20px">Could not load posts.</p>'; }
+}
+
+window.toggleFollow = async (id) => {
+  if (!isLoggedIn()) { window.location.href='/login.html'; return; }
+  try {
+    const res = await api.followUser(id);
+    const btn = document.getElementById('followBtn');
+    btn.textContent = res.data.following ? 'Following' : 'Follow';
+    btn.className = res.data.following ? 'btn btn-secondary btn-sm' : 'btn btn-primary btn-sm';
+    toast(res.data.following ? 'Following! 🎉' : 'Unfollowed','success');
+  } catch(e) { toast('Action failed','error'); }
+};
+
+function skeletons() {
+  return Array(3).fill(0).map(()=>`<div style="padding:20px 0;border-bottom:1px solid var(--border-soft)"><div class="skeleton" style="width:70%;height:20px;margin-bottom:8px;border-radius:6px"></div><div class="skeleton" style="width:90%;height:14px;margin-bottom:6px;border-radius:6px"></div><div class="skeleton" style="width:50%;height:14px;border-radius:6px"></div></div>`).join('');
+}
+
+loadProfile();
+</script>
+</body>
+</html>

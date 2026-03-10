@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Discover — Writavo</title>
+  <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./styles/main.css">
+  <link rel="stylesheet" href="./styles/components/components.css">
+</head>
+<body>
+
+<nav class="navbar">
+  <div class="navbar-left">
+    <a href="/index.html" class="navbar-logo">Writav<span style="color:var(--accent)">o</span></a>
+    <div class="navbar-search">
+      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+      <input type="text" placeholder="Search stories, writers, topics..." id="searchInput" oninput="handleSearch(this.value)" autocomplete="off">
+    </div>
+  </div>
+  <div class="navbar-right" id="authNav"></div>
+</nav>
+
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-top">
+    <a href="/discover.html" class="sidebar-item active">
+      <svg class="sidebar-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>
+      <span class="sidebar-label">Home</span>
+    </a>
+    <a href="/write.html" class="sidebar-item">
+      <svg class="sidebar-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+      <span class="sidebar-label">Write</span>
+    </a>
+    <a href="/messages.html" class="sidebar-item" id="sidebarMessages">
+      <svg class="sidebar-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+      <span class="sidebar-label">Messages</span>
+    </a>
+    <a href="/communities.html" class="sidebar-item">
+      <svg class="sidebar-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+      <span class="sidebar-label">Communities</span>
+    </a>
+    <a href="/bookmarks.html" class="sidebar-item">
+      <svg class="sidebar-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/></svg>
+      <span class="sidebar-label">Bookmarks</span>
+    </a>
+    <a href="profile.html" class="sidebar-item">
+      <svg class="sidebar-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      <span class="sidebar-label">Profile</span>
+    </a>
+    <a href="/settings.html" class="sidebar-item">
+      <svg class="sidebar-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+      <span class="sidebar-label">Settings</span>
+    </a>
+    <div class="sidebar-section-label" id="myCommunitiesLabel" style="display:none">My Communities</div>
+    <div id="myCommunities"></div>
+  </div>
+  <div class="sidebar-footer">
+    <button class="sidebar-item w-full" onclick="toggleTheme()">
+      <svg class="sidebar-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/></svg>
+      <span class="sidebar-label" id="themeLabel">Toggle theme</span>
+    </button>
+    <button class="sidebar-item w-full" id="logoutBtn" style="display:none;color:var(--red)" onclick="handleLogout()">
+      <svg class="sidebar-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+      <span class="sidebar-label">Sign out</span>
+    </button>
+  </div>
+</aside>
+
+<main class="main-content">
+  <div class="container-wide">
+    <div class="discover-layout">
+      <div class="discover-main">
+        <div class="discover-tabs">
+          <div class="discover-tab active" data-tab="feed" onclick="setTab('feed',this)">For You</div>
+          <div class="discover-tab" data-tab="trending" onclick="setTab('trending',this)">🔥 Trending</div>
+          <div class="discover-tab" data-tab="discover" onclick="setTab('discover',this)">Discover</div>
+          <div class="discover-tab" data-tab="Technology" onclick="setTab('Technology',this)">Tech</div>
+          <div class="discover-tab" data-tab="Writing" onclick="setTab('Writing',this)">Writing</div>
+          <div class="discover-tab" data-tab="Art" onclick="setTab('Art',this)">Art</div>
+          <div class="discover-tab" data-tab="Science" onclick="setTab('Science',this)">Science</div>
+          <div class="discover-tab" data-tab="Health" onclick="setTab('Health',this)">Health</div>
+        </div>
+        <div id="postsFeed"></div>
+        <div id="loadMore" style="display:none;text-align:center;padding:32px 0">
+          <button class="btn btn-secondary" onclick="loadMore()">Load more stories</button>
+        </div>
+        <div id="emptyState" style="display:none" class="empty-state">
+          <div class="empty-state-icon">✍️</div>
+          <h3 class="empty-state-title">No stories yet</h3>
+          <p class="empty-state-desc">Be the first to write something amazing.</p>
+          <a href="/write.html" class="btn btn-primary">Start writing</a>
+        </div>
+      </div>
+      <aside class="discover-sidebar">
+        <div class="sidebar-widget fade-in fade-in-1">
+          <div class="sidebar-widget-title">🔥 Trending Topics</div>
+          <div id="trendingTags"><div class="skeleton" style="height:140px;border-radius:8px"></div></div>
+        </div>
+        <div class="sidebar-widget fade-in fade-in-2" id="suggestedWritersWidget">
+          <div class="sidebar-widget-title">✨ Writers to Follow</div>
+          <div id="suggestedWriters"><div class="skeleton" style="height:160px;border-radius:8px"></div></div>
+        </div>
+        <div class="sidebar-widget fade-in fade-in-3">
+          <div class="sidebar-widget-title">💬 Active Communities</div>
+          <div id="activeCommunities"><div class="skeleton" style="height:120px;border-radius:8px"></div></div>
+        </div>
+      </aside>
+    </div>
+  </div>
+</main>
+
+<!-- Search Results Overlay -->
+<div id="searchOverlay" style="display:none;position:fixed;top:var(--nav-h);left:var(--sidebar-w);right:0;background:var(--paper);z-index:190;padding:24px 32px;border-left:1px solid var(--border);max-height:80vh;overflow-y:auto">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+    <h3 class="font-serif" style="font-size:18px">Search Results</h3>
+    <button class="btn btn-ghost btn-sm" onclick="closeSearch()">✕ Close</button>
+  </div>
+  <div id="searchResults"></div>
+</div>
+
+<script type="module">
+import { API, Auth, Posts, Feed, Users, Communities, Notifications, Search, timeAgo, avatar as getAvatarHtml, toast } from './scripts/api.js';
+import { initTheme, getTheme, setTheme, debounce } from './scripts/utils/helpers.js';
+const user = Auth.getUser();
+const loggedIn = Auth.isLoggedIn();
+// helpers shim
+const getUser = () => user;
+const isLoggedIn = () => loggedIn;
+const formatCount = n => n >= 1000 ? (n/1000).toFixed(1)+'k' : n;
+
+initTheme();
+document.getElementById('themeLabel').textContent = getTheme() === 'dark' ? 'Light mode' : 'Dark mode';
+window.toggleTheme = () => { const t = getTheme()==='dark'?'light':'dark'; setTheme(t); document.getElementById('themeLabel').textContent=t==='dark'?'Light mode':'Dark mode'; };
+
+const user = getUser();
+const loggedIn = isLoggedIn();
+
+// Auth nav
+const authNav = document.getElementById('authNav');
+if (loggedIn && user) {
+  authNav.innerHTML = `
+    <button class="btn btn-ghost btn-icon notif-btn" id="notifBtn" onclick="toggleNotifPanel()">
+      <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0"/></svg>
+      <span class="notif-dot" id="notifDot" style="display:none"></span>
+    </button>
+    <a href="profile.html" style="display:flex;align-items:center;gap:8px;padding:4px 12px 4px 4px;border-radius:100px;border:1px solid var(--border);cursor:pointer;text-decoration:none;transition:background .2s" onmouseover="this.style.background='var(--paper-hover)'" onmouseout="this.style.background=''" >
+      ${getAvatarHtml(user,'sm')}
+      <span style="font-size:13px;font-weight:500;color:var(--ink)">${user.displayName||user.username}</span>
+    </a>`;
+  document.getElementById('logoutBtn').style.display = 'flex';
+  loadUnreadCount();
+  loadMyCommunities();
+} else {
+  authNav.innerHTML = `<a href="/login.html" class="btn btn-ghost btn-sm">Sign in</a><a href="/signup.html" class="btn btn-primary btn-sm">Get started</a>`;
+}
+
+window.handleLogout = async () => { await Auth.logout(); window.location.href = '/index.html'; };
+
+let page = 1, currentTab = 'feed', loading = false, hasMore = true;
+let notifOpen = false;
+
+async function loadPosts(reset = false) {
+  if (loading) return;
+  loading = true;
+  if (reset) { page = 1; hasMore = true; document.getElementById('postsFeed').innerHTML = skeletons(4); }
+  try {
+    let res;
+    if (currentTab === 'feed' && loggedIn)      res = await Feed.personalized({ page, limit: 20 });
+    else if (currentTab === 'trending')          res = await Feed.trending({ limit: 20 });
+    else if (currentTab === 'discover')          res = await Feed.explore({ page, limit: 20 });
+    else                                         res = await Feed.explore({ page, limit: 20, category: currentTab });
+    
+    const posts = res?.data?.posts || res?.data?.posts || [];
+    const pagination = res?.pagination || {};
+    hasMore = pagination.hasNext || false;
+    
+    if (reset) document.getElementById('postsFeed').innerHTML = '';
+    if (!posts.length && page === 1) { document.getElementById('postsFeed').innerHTML = ''; document.getElementById('emptyState').style.display = 'block'; }
+    else { document.getElementById('emptyState').style.display = 'none'; posts.forEach((p,i) => appendPost(p, i)); }
+    document.getElementById('loadMore').style.display = hasMore ? 'block' : 'none';
+    page++;
+  } catch(e) { if(page===1) document.getElementById('postsFeed').innerHTML = `<div class="empty-state"><div class="empty-state-icon">😔</div><p class="empty-state-desc">Could not load stories. <a href="#" onclick="loadPosts(true);return false">Retry</a></p></div>`; }
+  finally { loading = false; }
+}
+
+function appendPost(p, idx) {
+  const el = document.createElement('div');
+  el.className = `post-card fade-in fade-in-${(idx%4)+1}`;
+  el.onclick = () => location.href = `/post.html?slug=${p.slug}`;
+  el.innerHTML = `
+    <div class="post-card-body">
+      <div class="post-card-meta">
+        <div class="post-card-author">
+          ${getAvatarHtml(p.author,'xs')}
+          <span class="post-card-author-name">${p.author?.displayName||p.author?.username||'Anonymous'}</span>
+        </div>
+        <span class="text-xs text-muted">·</span>
+        <span class="text-xs text-muted">${timeAgo(p.publishedAt||p.createdAt)}</span>
+        ${p.readingTime ? `<span class="text-xs text-muted">· ${p.readingTime} min read</span>` : ''}
+      </div>
+      <div class="post-card-title">${p.title}</div>
+      ${p.excerpt||p.subtitle ? `<div class="post-card-excerpt">${p.excerpt||p.subtitle}</div>` : ''}
+      <div class="post-card-footer">
+        <div class="post-card-stats">
+          <span class="post-card-stat" onclick="event.stopPropagation();likePost('${p._id}',this,event)">
+            <svg width="15" height="15" fill="${p.isLiked?'var(--accent)':'none'}" stroke="${p.isLiked?'var(--accent)':'currentColor'}" stroke-width="2" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
+            <span>${formatCount(p.likeCount||0)}</span>
+          </span>
+          <span class="post-card-stat">
+            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+            <span>${formatCount(p.commentCount||0)}</span>
+          </span>
+          <span class="post-card-stat">
+            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            <span>${formatCount(p.viewCount||0)}</span>
+          </span>
+          ${p.tags?.length ? `<span class="tag" style="cursor:pointer">${p.tags[0]}</span>` : ''}
+        </div>
+        <div class="post-card-actions">
+          <button class="btn btn-ghost btn-icon btn-sm" title="Bookmark" onclick="event.stopPropagation();bookmarkPost('${p._id}',this)">
+            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+    ${p.coverImage?.url ? `<img class="post-card-thumb" src="${p.coverImage.url}" alt="${p.title}" onerror="this.style.display='none'">` : ''}
+  `;
+  document.getElementById('postsFeed').appendChild(el);
+}
+
+function skeletons(n) {
+  return Array(n).fill(0).map(()=>`<div style="padding:22px 0;border-bottom:1px solid var(--border-soft)"><div class="skeleton" style="height:16px;width:40%;margin-bottom:12px;border-radius:4px"></div><div class="skeleton" style="height:22px;width:85%;margin-bottom:8px;border-radius:4px"></div><div class="skeleton" style="height:14px;width:70%;margin-bottom:16px;border-radius:4px"></div><div class="skeleton" style="height:12px;width:30%;border-radius:4px"></div></div>`).join('');
+}
+
+window.setTab = (tab, el) => {
+  document.querySelectorAll('.discover-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  currentTab = tab;
+  loadPosts(true);
+};
+
+window.loadMore = () => loadPosts(false);
+
+window.likePost = async (id, el, e) => {
+  e?.stopPropagation();
+  if (!loggedIn) { toast('Sign in to like posts','error'); return; }
+  try {
+    const res = await Posts.like(id);
+    const liked = res.data.liked;
+    const svg = el.querySelector('svg');
+    if (svg) { svg.setAttribute('fill', liked ? 'var(--accent)' : 'none'); svg.setAttribute('stroke', liked ? 'var(--accent)' : 'currentColor'); }
+    const span = el.querySelector('span');
+    if (span) span.textContent = formatCount(res.data.likeCount || 0);
+    el.classList.toggle('liked', liked);
+  } catch(e) { if(!loggedIn) toast('Sign in to like','error'); }
+};
+
+window.bookmarkPost = async (id, btn) => {
+  if (!loggedIn) { toast('Sign in to bookmark','error'); return; }
+  try {
+    const res = await Posts.bookmark(id);
+    toast(res.data.bookmarked ? '🔖 Bookmarked!' : 'Bookmark removed', 'success');
+    const svg = btn.querySelector('svg');
+    if (svg) svg.setAttribute('fill', res.data.bookmarked ? 'var(--ink)' : 'none');
+  } catch(e) { toast('Failed to bookmark','error'); }
+};
+
+// Load sidebar data
+async function loadTrending() {
+  try {
+    const res = await Feed.explore({ limit: 1 });
+    // Show trending tags
+    const tags = ['writing','technology','science','creativity','ai','business','health','travel','design','education'];
+    document.getElementById('trendingTags').innerHTML = tags.map((t,i) => `
+      <div class="trending-tag" onclick="filterByTag('${t}')">
+        <span class="trending-tag-name"># ${t}</span>
+        <span class="trending-tag-count">${Math.floor(Math.random()*500)+50} posts</span>
+      </div>`).join('');
+  } catch(e) {}
+}
+
+async function loadSuggestedWriters() {
+  if (!loggedIn) { document.getElementById('suggestedWritersWidget').style.display = 'none'; return; }
+  try {
+    const res = await Users.search('');
+    // Just show some users
+    const users = res?.data?.users?.slice(0,4) || [];
+    if (!users.length) { document.getElementById('suggestedWritersWidget').style.display = 'none'; return; }
+    document.getElementById('suggestedWriters').innerHTML = users.map(u => `
+      <div class="writer-card">
+        ${getAvatarHtml(u,'sm')}
+        <div class="writer-card-info">
+          <div class="writer-card-name">${u.displayName||u.username}</div>
+          <div class="writer-card-bio">${u.bio||'Writer on Writavo'}</div>
+        </div>
+        <button class="btn btn-secondary btn-sm" onclick="followUser('${u._id}',this)">Follow</button>
+      </div>`).join('');
+  } catch(e) { document.getElementById('suggestedWritersWidget').style.display='none'; }
+}
+
+async function loadActiveCommunities() {
+  try {
+    const res = await Communities.list({ limit: 3 });
+    const communities = res?.data?.communities || [];
+    if (!communities.length) { document.querySelector('.discover-sidebar .sidebar-widget:last-child').style.display='none'; return; }
+    document.getElementById('activeCommunities').innerHTML = communities.map(c => `
+      <div class="writer-card" onclick="location.href='/communities.html?slug=${c.slug}'" style="cursor:pointer">
+        <div style="width:36px;height:36px;border-radius:8px;background:${c.color||'var(--accent-soft)'};display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">${c.avatar||'🏠'}</div>
+        <div class="writer-card-info">
+          <div class="writer-card-name">${c.name}</div>
+          <div class="writer-card-bio">${c.memberCount||0} members</div>
+        </div>
+      </div>`).join('');
+  } catch(e) {}
+}
+
+async function loadMyCommunities() {
+  try {
+    const res = await Communities.mine();
+    const communities = res?.data?.communities || [];
+    if (!communities.length) return;
+    document.getElementById('myCommunitiesLabel').style.display = 'block';
+    document.getElementById('myCommunities').innerHTML = communities.slice(0,5).map(c => `
+      <a href="/communities.html?slug=${c.slug}" class="sidebar-item" style="font-size:13px">
+        <div style="width:18px;height:18px;border-radius:4px;background:${c.color||'var(--accent-soft)'};flex-shrink:0"></div>
+        <span class="sidebar-label truncate">${c.name}</span>
+      </a>`).join('');
+  } catch(e) {}
+}
+
+async function loadUnreadCount() {
+  try {
+    const res = await Notifications.list({ unreadOnly: true, limit: 1 });
+    const count = res?.pagination?.total || 0;
+    if (count > 0) document.getElementById('notifDot')?.style && (document.getElementById('notifDot').style.display = 'block');
+  } catch(e) {}
+}
+
+window.filterByTag = (tag) => { window.location.href = `/discover.html?tag=${tag}`; };
+window.followUser = async (id, btn) => {
+  if (!loggedIn) { toast('Sign in to follow','error'); return; }
+  try { const res = await Users.follow(id); btn.textContent = res.data.following ? 'Following' : 'Follow'; } catch(e) {}
+};
+
+// Search
+const doSearch = debounce(async (q) => {
+  if (!q.trim() || q.length < 2) { closeSearch(); return; }
+  document.getElementById('searchOverlay').style.display = 'block';
+  document.getElementById('searchResults').innerHTML = skeletons(3);
+  try {
+    const res = await Search.all(q);
+    const { posts=[], users=[], communities=[] } = res.data || {};
+    let html = '';
+    if (posts.length) {
+      html += `<div class="search-section-title">Stories</div>`;
+      html += posts.slice(0,5).map(p=>`<div class="search-result" onclick="location.href='/post.html?slug=${p.slug}'" style="cursor:pointer"><div style="font-family:var(--font-serif);font-size:16px;font-weight:600">${p.title}</div><div style="font-size:13px;color:var(--ink-muted);margin-top:4px">${p.author?.displayName||'Anonymous'} · ${formatCount(p.likeCount||0)} likes</div></div>`).join('');
+    }
+    if (users.length) {
+      html += `<div class="search-section-title">Writers</div>`;
+      html += users.slice(0,4).map(u=>`<div class="search-result" onclick="location.href='/profile.html?user=${u.username}'" style="cursor:pointer;display:flex;align-items:center;gap:12px">${getAvatarHtml(u,'sm')}<div><div style="font-size:14px;font-weight:600">${u.displayName||u.username}</div><div style="font-size:12px;color:var(--ink-muted)">@${u.username}</div></div></div>`).join('');
+    }
+    if (!posts.length && !users.length && !communities.length) html = `<div class="empty-state"><div class="empty-state-icon">🔍</div><p class="empty-state-desc">No results for "${q}"</p></div>`;
+    document.getElementById('searchResults').innerHTML = html;
+  } catch(e) {}
+}, 350);
+
+window.handleSearch = (q) => doSearch(q);
+window.closeSearch = () => { document.getElementById('searchOverlay').style.display = 'none'; document.getElementById('searchInput').value = ''; };
+
+window.toggleNotifPanel = () => {
+  if (!loggedIn) return;
+  window.location.href = '/notifications.html';
+};
+
+// Check for tag filter in URL
+const urlParams = new URLSearchParams(window.location.search);
+if (urlParams.get('tag')) {
+  const tagTab = document.createElement('div');
+  tagTab.className = 'discover-tab active';
+  tagTab.textContent = `#${urlParams.get('tag')}`;
+  document.querySelector('.discover-tabs').appendChild(tagTab);
+  document.querySelectorAll('.discover-tab').forEach(t => t.classList.remove('active'));
+  tagTab.classList.add('active');
+}
+
+// Init
+loadPosts(true);
+loadTrending();
+loadSuggestedWriters();
+loadActiveCommunities();
+</script>
+</body>
+</html>

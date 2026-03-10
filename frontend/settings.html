@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Settings — Writavo</title>
+  <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;0,700&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./styles/main.css">
+  <link rel="stylesheet" href="./styles/components/components.css">
+  <style>
+    .settings-layout{display:grid;grid-template-columns:220px 1fr;gap:40px;max-width:900px;margin:0 auto;padding:32px 20px 80px}
+    .settings-nav{display:flex;flex-direction:column;gap:2px}
+    .settings-nav-item{padding:9px 14px;border-radius:7px;font-size:14px;font-weight:500;cursor:pointer;color:var(--ink-muted);transition:all .2s}
+    .settings-nav-item:hover{background:var(--paper-hover);color:var(--ink)}
+    .settings-nav-item.active{background:var(--paper-hover);color:var(--ink)}
+    .settings-panel{display:none}
+    .settings-panel.active{display:block}
+    .settings-section{margin-bottom:36px}
+    .settings-section-title{font-family:var(--font-serif);font-size:20px;font-weight:600;margin-bottom:6px}
+    .settings-section-desc{font-size:14px;color:var(--ink-muted);margin-bottom:20px}
+    .toggle-row{display:flex;justify-content:space-between;align-items:center;padding:14px 0;border-bottom:1px solid var(--border-soft)}
+    .toggle-row:last-child{border-bottom:none}
+    .toggle-label{font-size:14px;font-weight:500}
+    .toggle-desc{font-size:12px;color:var(--ink-muted);margin-top:2px}
+    .toggle{position:relative;width:44px;height:24px;flex-shrink:0}
+    .toggle input{opacity:0;width:0;height:0}
+    .toggle-slider{position:absolute;cursor:pointer;inset:0;background:var(--border);border-radius:24px;transition:.2s}
+    .toggle-slider:before{content:'';position:absolute;width:18px;height:18px;left:3px;bottom:3px;background:white;border-radius:50%;transition:.2s}
+    input:checked+.toggle-slider{background:var(--ink)}
+    input:checked+.toggle-slider:before{transform:translateX(20px)}
+    .avatar-upload{display:flex;align-items:center;gap:16px;margin-bottom:20px}
+    .avatar-upload-btn{padding:8px 16px;border:1.5px solid var(--border);border-radius:7px;background:none;cursor:pointer;font-size:13px;font-weight:500;font-family:inherit;transition:all .2s}
+    .avatar-upload-btn:hover{background:var(--paper-hover)}
+    @media(max-width:700px){.settings-layout{grid-template-columns:1fr}.settings-nav{flex-direction:row;flex-wrap:wrap;border-bottom:1px solid var(--border);padding-bottom:12px;margin-bottom:0}}
+  </style>
+</head>
+<body>
+<nav class="navbar">
+  <div class="navbar-left">
+    <a href="/discover.html" class="navbar-logo">Writav<span style="color:var(--accent)">o</span></a>
+    <span style="font-size:14px;color:var(--ink-muted)">Settings</span>
+  </div>
+  <div class="navbar-right"><a href="/discover.html" class="btn btn-secondary btn-sm">← Home</a></div>
+</nav>
+
+<main class="main-content" style="margin-left:0">
+  <div class="settings-layout">
+    <nav class="settings-nav">
+      <div class="settings-nav-item active" onclick="showPanel('profile',this)">👤 Profile</div>
+      <div class="settings-nav-item" onclick="showPanel('account',this)">🔒 Account</div>
+      <div class="settings-nav-item" onclick="showPanel('privacy',this)">🛡 Privacy</div>
+      <div class="settings-nav-item" onclick="showPanel('notifications',this)">🔔 Notifications</div>
+      <div class="settings-nav-item" onclick="showPanel('appearance',this)">🎨 Appearance</div>
+      <div class="settings-nav-item" style="color:var(--red);margin-top:auto" onclick="handleLogout()">↩ Sign out</div>
+    </nav>
+    <div>
+      <div id="alertBox" style="display:none;margin-bottom:20px"></div>
+
+      <!-- PROFILE -->
+      <div class="settings-panel active" id="panel-profile">
+        <div class="settings-section">
+          <div class="settings-section-title">Edit Profile</div>
+          <div class="settings-section-desc">Update your public profile information</div>
+          <div class="avatar-upload">
+            <div id="currentAvatar"></div>
+            <div>
+              <button class="avatar-upload-btn" onclick="document.getElementById('avatarFile').click()">Change avatar</button>
+              <input type="file" id="avatarFile" accept="image/*" style="display:none" onchange="uploadAvatar(this)">
+              <p style="font-size:12px;color:var(--ink-faint);margin-top:4px">JPG, PNG, GIF up to 5MB</p>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label class="form-label">First name</label><input class="form-input" id="firstName" type="text"></div>
+            <div class="form-group"><label class="form-label">Last name</label><input class="form-input" id="lastName" type="text"></div>
+          </div>
+          <div class="form-group"><label class="form-label">Display name</label><input class="form-input" id="displayName" type="text"></div>
+          <div class="form-group"><label class="form-label">Username</label><input class="form-input" id="username" type="text" readonly style="opacity:.6;cursor:not-allowed"><small style="font-size:12px;color:var(--ink-faint)">Username cannot be changed</small></div>
+          <div class="form-group"><label class="form-label">Bio</label><textarea class="form-input" id="bio" rows="3" maxlength="500" placeholder="Tell readers about yourself..."></textarea></div>
+          <div class="form-group"><label class="form-label">Website</label><input class="form-input" id="website" type="url" placeholder="https://yoursite.com"></div>
+          <div class="form-row">
+            <div class="form-group"><label class="form-label">Country</label><input class="form-input" id="country" type="text"></div>
+            <div class="form-group"><label class="form-label">State / Region</label><input class="form-input" id="state" type="text"></div>
+          </div>
+          <button class="btn btn-primary" onclick="saveProfile()" id="saveProfileBtn">Save changes</button>
+        </div>
+      </div>
+
+      <!-- ACCOUNT -->
+      <div class="settings-panel" id="panel-account">
+        <div class="settings-section">
+          <div class="settings-section-title">Change Password</div>
+          <div class="settings-section-desc">Keep your account secure with a strong password</div>
+          <div class="form-group"><label class="form-label">Current password</label><input class="form-input" id="currentPw" type="password"></div>
+          <div class="form-group"><label class="form-label">New password</label><input class="form-input" id="newPw" type="password"></div>
+          <div class="form-group"><label class="form-label">Confirm new password</label><input class="form-input" id="confirmPw" type="password"></div>
+          <button class="btn btn-primary" onclick="changePassword()">Update password</button>
+        </div>
+      </div>
+
+      <!-- PRIVACY -->
+      <div class="settings-panel" id="panel-privacy">
+        <div class="settings-section">
+          <div class="settings-section-title">Privacy Settings</div>
+          <div class="settings-section-desc">Control who can see your content and interact with you</div>
+          <div class="toggle-row">
+            <div><div class="toggle-label">Public profile</div><div class="toggle-desc">Anyone can view your profile</div></div>
+            <label class="toggle"><input type="checkbox" id="publicProfile" checked><span class="toggle-slider"></span></label>
+          </div>
+          <div class="toggle-row">
+            <div><div class="toggle-label">Public posts</div><div class="toggle-desc">Your posts appear in discovery feeds</div></div>
+            <label class="toggle"><input type="checkbox" id="publicPosts" checked><span class="toggle-slider"></span></label>
+          </div>
+          <div class="toggle-row">
+            <div><div class="toggle-label">Allow messages from everyone</div><div class="toggle-desc">Followers only if disabled</div></div>
+            <label class="toggle"><input type="checkbox" id="allowMessages" checked><span class="toggle-slider"></span></label>
+          </div>
+          <div class="toggle-row">
+            <div><div class="toggle-label">Show followers count</div><div class="toggle-desc">Display follower count on your profile</div></div>
+            <label class="toggle"><input type="checkbox" id="showFollowers" checked><span class="toggle-slider"></span></label>
+          </div>
+          <button class="btn btn-primary" style="margin-top:20px" onclick="savePrivacy()">Save privacy settings</button>
+        </div>
+      </div>
+
+      <!-- NOTIFICATIONS -->
+      <div class="settings-panel" id="panel-notifications">
+        <div class="settings-section">
+          <div class="settings-section-title">Notification Preferences</div>
+          <div class="settings-section-desc">Choose what you want to be notified about</div>
+          <p style="font-size:13px;font-weight:600;color:var(--ink-muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:.06em">In-app</p>
+          <div class="toggle-row"><div><div class="toggle-label">New followers</div></div><label class="toggle"><input type="checkbox" id="n_follower" checked><span class="toggle-slider"></span></label></div>
+          <div class="toggle-row"><div><div class="toggle-label">Comments on posts</div></div><label class="toggle"><input type="checkbox" id="n_comment" checked><span class="toggle-slider"></span></label></div>
+          <div class="toggle-row"><div><div class="toggle-label">Likes on posts</div></div><label class="toggle"><input type="checkbox" id="n_like" checked><span class="toggle-slider"></span></label></div>
+          <div class="toggle-row"><div><div class="toggle-label">New messages</div></div><label class="toggle"><input type="checkbox" id="n_message" checked><span class="toggle-slider"></span></label></div>
+          <p style="font-size:13px;font-weight:600;color:var(--ink-muted);margin:20px 0 8px;text-transform:uppercase;letter-spacing:.06em">Email</p>
+          <div class="toggle-row"><div><div class="toggle-label">New followers</div></div><label class="toggle"><input type="checkbox" id="e_follower"><span class="toggle-slider"></span></label></div>
+          <div class="toggle-row"><div><div class="toggle-label">Weekly digest</div></div><label class="toggle"><input type="checkbox" id="e_weekly" checked><span class="toggle-slider"></span></label></div>
+          <div class="toggle-row"><div><div class="toggle-label">Newsletter updates</div></div><label class="toggle"><input type="checkbox" id="e_newsletter" checked><span class="toggle-slider"></span></label></div>
+          <button class="btn btn-primary" style="margin-top:20px" onclick="saveNotifications()">Save preferences</button>
+        </div>
+      </div>
+
+      <!-- APPEARANCE -->
+      <div class="settings-panel" id="panel-appearance">
+        <div class="settings-section">
+          <div class="settings-section-title">Appearance</div>
+          <div class="settings-section-desc">Customize how Writavo looks for you</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:24px">
+            <div class="card" style="cursor:pointer;border:2px solid transparent" id="themeLight" onclick="applyTheme('light')">
+              <div style="height:40px;background:#faf9f7;border:1px solid #e8e6df;border-radius:6px;margin-bottom:8px"></div>
+              <div style="font-size:13px;font-weight:500">Light</div>
+            </div>
+            <div class="card" style="cursor:pointer;border:2px solid transparent" id="themeDark" onclick="applyTheme('dark')">
+              <div style="height:40px;background:#141412;border-radius:6px;margin-bottom:8px"></div>
+              <div style="font-size:13px;font-weight:500">Dark</div>
+            </div>
+            <div class="card" style="cursor:pointer;border:2px solid transparent" id="themeAuto" onclick="applyTheme('auto')">
+              <div style="height:40px;background:linear-gradient(90deg,#faf9f7 50%,#141412 50%);border-radius:6px;margin-bottom:8px"></div>
+              <div style="font-size:13px;font-weight:500">Auto</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script type="module">
+import api from './scripts/api.js';
+import { requireAuth, getUser, setUser, getAvatarHtml, toast, setTheme, getTheme, initTheme } from './scripts/utils/helpers.js';
+requireAuth();
+initTheme();
+
+let user = getUser();
+populateForm(user);
+
+function populateForm(u) {
+  if (!u) return;
+  ['firstName','lastName','displayName','username','bio','website','country','state'].forEach(f => {
+    const el = document.getElementById(f);
+    if (el) el.value = u[f] || '';
+  });
+  document.getElementById('currentAvatar').innerHTML = getAvatarHtml(u,'lg');
+  if (u.privacy) {
+    document.getElementById('publicProfile').checked = u.privacy.profileVisibility !== 'private';
+    document.getElementById('publicPosts').checked = u.privacy.postsVisibility !== 'private';
+    document.getElementById('allowMessages').checked = u.privacy.allowMessagesFrom === 'everyone';
+    document.getElementById('showFollowers').checked = u.privacy.showFollowersCount !== false;
+  }
+  if (u.notifications?.inApp) {
+    document.getElementById('n_follower').checked = u.notifications.inApp.newFollower !== false;
+    document.getElementById('n_comment').checked = u.notifications.inApp.newComment !== false;
+    document.getElementById('n_like').checked = u.notifications.inApp.newLike !== false;
+    document.getElementById('n_message').checked = u.notifications.inApp.newMessage !== false;
+  }
+  if (u.notifications?.email) {
+    document.getElementById('e_follower').checked = !!u.notifications.email.newFollower;
+    document.getElementById('e_weekly').checked = u.notifications.email.digestWeekly !== false;
+    document.getElementById('e_newsletter').checked = u.notifications.email.newsletter !== false;
+  }
+  // Highlight current theme
+  highlightTheme(getTheme());
+}
+
+function highlightTheme(t) {
+  ['light','dark','auto'].forEach(th => {
+    document.getElementById('theme'+th.charAt(0).toUpperCase()+th.slice(1)).style.borderColor = t === th ? 'var(--accent)' : 'transparent';
+  });
+}
+
+window.applyTheme = (t) => { setTheme(t); highlightTheme(t); };
+
+const showAlert = (msg, type='success') => {
+  const el = document.getElementById('alertBox');
+  el.className = `alert alert-${type}`;
+  el.textContent = msg;
+  el.style.display = 'block';
+  setTimeout(() => el.style.display='none', 4000);
+};
+
+window.showPanel = (id, el) => {
+  document.querySelectorAll('.settings-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.settings-nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('panel-'+id).classList.add('active');
+  el.classList.add('active');
+};
+
+window.saveProfile = async () => {
+  const btn = document.getElementById('saveProfileBtn');
+  btn.textContent='Saving...'; btn.disabled=true;
+  try {
+    const data = { firstName: document.getElementById('firstName').value.trim(), lastName: document.getElementById('lastName').value.trim(), displayName: document.getElementById('displayName').value.trim(), bio: document.getElementById('bio').value.trim(), website: document.getElementById('website').value.trim(), country: document.getElementById('country').value.trim(), state: document.getElementById('state').value.trim() };
+    const res = await api.updateProfile(data);
+    setUser(res.data.user);
+    showAlert('Profile updated successfully!');
+  } catch(e) { showAlert(e.message||'Update failed','error'); }
+  finally { btn.textContent='Save changes'; btn.disabled=false; }
+};
+
+window.uploadAvatar = async (input) => {
+  if (!input.files[0]) return;
+  const fd = new FormData();
+  fd.append('file', input.files[0]);
+  fd.append('mediaType', 'avatar');
+  try {
+    await api.uploadMedia(fd);
+    toast('Avatar updated! Reload to see changes.','success');
+  } catch(e) { toast('Upload failed — is the server running?','error'); }
+};
+
+window.changePassword = async () => {
+  const curr = document.getElementById('currentPw').value;
+  const nw = document.getElementById('newPw').value;
+  const conf = document.getElementById('confirmPw').value;
+  if (!curr || !nw) { showAlert('Fill in all fields','error'); return; }
+  if (nw !== conf) { showAlert('New passwords do not match','error'); return; }
+  try {
+    await api.post('/auth/change-password', { currentPassword: curr, newPassword: nw });
+    showAlert('Password changed successfully!');
+    ['currentPw','newPw','confirmPw'].forEach(id => document.getElementById(id).value='');
+  } catch(e) { showAlert(e.message||'Failed to change password','error'); }
+};
+
+window.savePrivacy = async () => {
+  try {
+    await api.updateSettings({ privacy: {
+      profileVisibility: document.getElementById('publicProfile').checked ? 'public' : 'private',
+      postsVisibility: document.getElementById('publicPosts').checked ? 'public' : 'private',
+      allowMessagesFrom: document.getElementById('allowMessages').checked ? 'everyone' : 'followers',
+      showFollowersCount: document.getElementById('showFollowers').checked,
+    }});
+    showAlert('Privacy settings saved!');
+  } catch(e) { showAlert(e.message||'Update failed','error'); }
+};
+
+window.saveNotifications = async () => {
+  try {
+    await api.updateSettings({ notifications: {
+      inApp: { newFollower: document.getElementById('n_follower').checked, newComment: document.getElementById('n_comment').checked, newLike: document.getElementById('n_like').checked, newMessage: document.getElementById('n_message').checked },
+      email: { newFollower: document.getElementById('e_follower').checked, digestWeekly: document.getElementById('e_weekly').checked, newsletter: document.getElementById('e_newsletter').checked },
+    }});
+    showAlert('Notification preferences saved!');
+  } catch(e) { showAlert(e.message||'Update failed','error'); }
+};
+
+window.handleLogout = async () => { await api.logout(); window.location.href='/index.html'; };
+</script>
+</body>
+</html>

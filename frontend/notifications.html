@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Notifications — Writavo</title>
+  <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./styles/main.css">
+  <link rel="stylesheet" href="./styles/components/components.css">
+</head>
+<body>
+<nav class="navbar">
+  <div class="navbar-left">
+    <a href="/discover.html" class="navbar-logo">Writav<span style="color:var(--accent)">o</span></a>
+  </div>
+  <div class="navbar-right"><a href="/write.html" class="btn btn-primary btn-sm">Write</a></div>
+</nav>
+<aside class="sidebar">
+  <div class="sidebar-top">
+    <a href="/discover.html" class="sidebar-item"><svg class="sidebar-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg><span class="sidebar-label">Home</span></a>
+    <a href="/bookmarks.html" class="sidebar-item"><svg class="sidebar-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/></svg><span class="sidebar-label">Bookmarks</span></a>
+    <a href="/profile.html" class="sidebar-item"><svg class="sidebar-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><span class="sidebar-label">Profile</span></a>
+    <a href="/settings.html" class="sidebar-item"><svg class="sidebar-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/></svg><span class="sidebar-label">Settings</span></a>
+  </div>
+</aside>
+<main class="main-content">
+  <div class="container-wide" style="padding:32px 24px 80px">
+    <div style="max-width:640px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px">
+        <h1 style="font-family:var(--font-serif);font-size:28px;font-weight:700">🔔 Notifications</h1>
+        <button class="btn btn-ghost btn-sm" onclick="markAllRead()">Mark all read</button>
+      </div>
+      <div id="notifList"></div>
+      <div id="emptyState" style="display:none" class="empty-state">
+        <div class="empty-state-icon">🔔</div>
+        <h3 class="empty-state-title">All caught up!</h3>
+        <p class="empty-state-desc">No new notifications right now.</p>
+      </div>
+    </div>
+  </div>
+</main>
+<script type="module">
+import api from './scripts/api.js';
+import { requireAuth, getAvatarHtml, timeAgo, initTheme } from './scripts/utils/helpers.js';
+initTheme();
+requireAuth();
+const icons = { like:'❤️', comment:'💬', follow:'👤', message:'✉️', community_invite:'🏠', system:'📢', newsletter:'📰' };
+async function load() {
+  document.getElementById('notifList').innerHTML = `<div style="text-align:center;padding:40px"><div class="spinner" style="margin:0 auto"></div></div>`;
+  try {
+    const res = await api.getNotifications({ limit: 50 });
+    const notifs = res?.data?.notifications || [];
+    if (!notifs.length) { document.getElementById('notifList').innerHTML=''; document.getElementById('emptyState').style.display='block'; return; }
+    document.getElementById('notifList').innerHTML = notifs.map(n => `
+      <div class="notif-item ${!n.isRead?'unread':''}" onclick="openNotif('${n._id}','${n.link||''}',${n.isRead})">
+        ${!n.isRead ? '<div class="notif-dot-badge"></div>' : '<div style="width:8px;flex-shrink:0"></div>'}
+        ${getAvatarHtml(n.sender,'sm')}
+        <div>
+          <div class="notif-text">${icons[n.type]||'📌'} ${n.message}</div>
+          <div class="notif-time">${timeAgo(n.createdAt)}</div>
+        </div>
+      </div>`).join('');
+  } catch(e) { document.getElementById('notifList').innerHTML='<p class="text-muted" style="padding:24px 0">Could not load notifications.</p>'; }
+}
+window.openNotif = async (id, link, isRead) => {
+  try { if (!isRead) await api.put(`/notifications/${id}/read`); } catch(e) {}
+  if (link) window.location.href = link;
+};
+window.markAllRead = async () => {
+  try { await api.put('/notifications/read-all'); load(); } catch(e) {}
+};
+load();
+</script>
+</body>
+</html>
