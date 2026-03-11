@@ -297,7 +297,7 @@
 
 <!-- HERO -->
 <section class="hero">
-  <div class="hero-badge">🌟 For teens, students & young creators</div>
+  <div class="hero-badge">🌟 For teens, students & young writers</div>
   <h1>Your Voice Matters. Start Writing Today.</h1>
   <p>Writavo is a free, open platform for everyone aged 10 and above. Write articles, build your portfolio, share photos, and connect with a global community of young creators.</p>
   <div class="hero-actions">
@@ -541,7 +541,7 @@
     setTimeout(() => t.classList.remove('show'), 3000);
   }
 
-  function handleSignup() {
+  async function handleSignup() {
     const firstName = document.getElementById('firstName').value.trim();
     const lastName = document.getElementById('lastName').value.trim();
     const username = document.getElementById('username').value.trim();
@@ -562,9 +562,42 @@
     if (age < 10) {
       showToast('⚠️ You must be at least 10 years old to join!'); return;
     }
-    document.getElementById('successMsg').style.display = 'block';
-    showToast('🎉 Welcome to Writavo, ' + firstName + '!');
+    try {
+
+  const res = await fetch("/api/auth/signup", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      firstName,
+      lastName,
+      username,
+      email,
+      password,
+      dob
+    })
+  });
+
+  const data = await res.json();
+
+  if (!res.ok) {
+    showToast(data.message || "Signup failed");
+    return;
   }
+
+  document.getElementById('successMsg').style.display = 'block';
+  showToast('🎉 Account created! Check your email.');
+
+  setTimeout(() => {
+    window.location.href =
+      "/verify-email.html?email=" + encodeURIComponent(email);
+  }, 1500);
+
+} catch (err) {
+  showToast("Server error. Try again.");
+ }
+}  
 
   function handleGoogleSignup() {
     showToast('🔗 Google Sign-in requires backend setup — coming soon!');
@@ -572,3 +605,5 @@
 </script>
 </body>
 </html>
+
+

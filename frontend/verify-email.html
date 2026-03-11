@@ -76,7 +76,7 @@
 
   const params   = new URLSearchParams(location.search);
   const token    = params.get('token');
-  const email    = params.get('email') || localStorage.getItem('pendingEmail') || '';
+  const email = params.get('email') || localStorage.getItem('pendingEmail') || 'your email';
   let   resendCooldown = false;
 
   document.getElementById('emailDisplay').textContent = email;

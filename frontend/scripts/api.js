@@ -268,6 +268,10 @@ const api = {
   put: API.put,
   patch: API.patch,
   delete: API.delete,
+
+
+
+
   getProfile: (username) => Users.profile(username),
   getUserPosts: (username, q) => Users.posts(username, q),
   followUser: (idOrUsername) => Users.follow(idOrUsername),
