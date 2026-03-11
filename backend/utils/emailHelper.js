@@ -5,13 +5,17 @@ let transporter = null;
 
 const getTransporter = () => {
   if (transporter) return transporter;
+
   transporter = nodemailer.createTransport({
-    service: config.EMAIL_SERVICE,
+    host: "smtp.gmail.com",
+    port: 465,
+    secure: true,
     auth: {
       user: config.EMAIL_USER,
       pass: config.EMAIL_PASSWORD,
     },
   });
+
   return transporter;
 };
 
